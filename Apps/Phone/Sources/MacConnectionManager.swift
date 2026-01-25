@@ -51,13 +51,19 @@ final class MacConnectionManager: NSObject, ObservableObject {
         print("[MacConnection] Disconnected")
     }
 
-    func sendCommand(_ command: String) {
-        guard let mac = connectedMac,
-              let data = command.data(using: .utf8) else { return }
+    func sendCommand(_ command: String, source: BridgeCoordinator.CommandSource = .phone) {
+        guard let mac = connectedMac else { return }
+
+        let payload: [String: String] = [
+            "command": command,
+            "source": source.rawValue
+        ]
+
+        guard let data = try? JSONEncoder().encode(payload) else { return }
 
         do {
             try session.send(data, toPeers: [mac], with: .reliable)
-            print("[MacConnection] Sent: \(command)")
+            print("[MacConnection] Sent: \(command) (from \(source.rawValue))")
         } catch {
             print("[MacConnection] Failed to send: \(error)")
         }

@@ -132,7 +132,7 @@ struct ContentView: View {
     }
 
     private func sendManualCommand(_ command: String) {
-        coordinator.forwardToMac(command: command, timestamp: Date())
+        coordinator.forwardToMac(command: command, timestamp: Date(), source: .phone)
     }
 
     private func toggleConnection() {

@@ -14,6 +14,7 @@ final class ConnectionManager: NSObject, ObservableObject {
     @Published private(set) var connectionState: ConnectionState = .disconnected
     @Published private(set) var connectedPeerName: String?
     @Published private(set) var lastCommand: String?
+    @Published private(set) var lastCommandSource: String?  // "watch" eller "phone"
 
     private var authorizedPeerID: MCPeerID?
 
@@ -80,16 +81,32 @@ extension ConnectionManager: MCSessionDelegate {
             return
         }
 
-        guard let commandString = String(data: data, encoding: .utf8),
-              let command = PresentationCommand(rawValue: commandString) else {
+        // Försök parsa som JSON först (nytt format)
+        var commandString: String
+        var source: String = "phone"
+
+        if let payload = try? JSONDecoder().decode([String: String].self, from: data),
+           let cmd = payload["command"] {
+            commandString = cmd
+            source = payload["source"] ?? "phone"
+        } else if let plainCommand = String(data: data, encoding: .utf8) {
+            // Fallback för gammalt format
+            commandString = plainCommand
+        } else {
             print("[ConnectionManager] Invalid command data")
             return
         }
 
-        print("[ConnectionManager] Received: \(command.rawValue)")
+        guard let command = PresentationCommand(rawValue: commandString) else {
+            print("[ConnectionManager] Unknown command: \(commandString)")
+            return
+        }
+
+        print("[ConnectionManager] Received: \(command.rawValue) from \(source)")
 
         DispatchQueue.main.async {
             self.lastCommand = command.rawValue
+            self.lastCommandSource = source
         }
 
         let success = keyboardSimulator.handleCommand(command)

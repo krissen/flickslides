@@ -94,15 +94,28 @@ final class StatusBarController {
             }
             .store(in: &cancellables)
 
-        connectionManager.$lastCommand
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] command in
-                if let command,
-                   let menuItem = self?.statusItem.menu?.item(withTag: 100) {
-                    menuItem.title = "Senaste: \(command)"
+        Publishers.CombineLatest(
+            connectionManager.$lastCommand,
+            connectionManager.$lastCommandSource
+        )
+        .receive(on: DispatchQueue.main)
+        .sink { [weak self] command, source in
+            guard let menuItem = self?.statusItem.menu?.item(withTag: 100) else { return }
+
+            if let command {
+                let sourceEmoji: String
+                switch source {
+                case "watch":
+                    sourceEmoji = " (⌚)"
+                case "phone":
+                    sourceEmoji = " (📱)"
+                default:
+                    sourceEmoji = ""
                 }
+                menuItem.title = "Senaste: \(command)\(sourceEmoji)"
             }
-            .store(in: &cancellables)
+        }
+        .store(in: &cancellables)
     }
 
     @objc private func openAccessibilitySettings() {
