@@ -3,7 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     // MARK: - App Group
 
-    private static let appGroupID = "group.se.flickslides.app"
+    private static let appGroupID = "group.com.kristianniemi.FlickSlides"
 
     // MARK: - UserDefaults Keys
 

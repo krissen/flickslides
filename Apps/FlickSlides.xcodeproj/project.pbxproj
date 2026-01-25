@@ -18,6 +18,7 @@
 		6C4A7374FB1A4E1640717EC1 /* KeyboardSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD90C1ADB4C77D204AE70074 /* KeyboardSimulator.swift */; };
 		6E38DFF0A7E9FAEA9EA09E62 /* FlickSlidesMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06A27CEB1E25339638FFCB4C /* FlickSlidesMacApp.swift */; };
 		79455FE9AFA990232EC0D024 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CED1D49F1AE41C6A695548F5 /* ContentView.swift */; };
+		830E8755C37FF94069C2B0D0 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 442859D4B621E4CF2421F893 /* SettingsView.swift */; };
 		889B70BFD4E8B738096997CC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4858FD1EABDB5BDC792D8DC8 /* AppDelegate.swift */; };
 		8C21AC87FBC7356268254A45 /* AccessibilityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B5FD7801F17DF1E6B10B216 /* AccessibilityManager.swift */; };
 		98470D0E73F799B0F6ECB395 /* FlickSlidesWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 0C337354533D2F2D8642D449 /* FlickSlidesWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -56,6 +57,7 @@
 /* Begin PBXFileReference section */
 		06A27CEB1E25339638FFCB4C /* FlickSlidesMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlickSlidesMacApp.swift; sourceTree = "<group>"; };
 		0C337354533D2F2D8642D449 /* FlickSlidesWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlickSlidesWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		442859D4B621E4CF2421F893 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		445FB66AC6E7CABC19AF8CF5 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
 		4858FD1EABDB5BDC792D8DC8 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		5E9FE5D271E31BE87E3F37F5 /* BridgeCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeCoordinator.swift; sourceTree = "<group>"; };
@@ -147,6 +149,7 @@
 				803EE9410B0EFB5A8480B8B7 /* ContentView.swift */,
 				CD381C7F07DEA182D0EA5F4E /* FlickSlidesPhoneApp.swift */,
 				90F3AFE3FE3E0C9A22D8D17D /* MacConnectionManager.swift */,
+				442859D4B621E4CF2421F893 /* SettingsView.swift */,
 				646DEAB501F90F257B00FB71 /* WatchSessionManager.swift */,
 			);
 			name = Sources;
@@ -291,6 +294,7 @@
 				3199B1790A6925F2A9093CC7 /* ContentView.swift in Sources */,
 				0CE9A57A1ABB06CBF3E20865 /* FlickSlidesPhoneApp.swift in Sources */,
 				E4011ECD6C983726C01D3DD4 /* MacConnectionManager.swift in Sources */,
+				830E8755C37FF94069C2B0D0 /* SettingsView.swift in Sources */,
 				09B4E33E7D9BF67836E273D2 /* WatchSessionManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

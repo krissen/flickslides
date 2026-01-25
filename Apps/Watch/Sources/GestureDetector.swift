@@ -45,7 +45,7 @@ final class GestureDetector: ObservableObject {
 
         /// Skapar konfiguration med värden från UserDefaults (med app group för delning med iPhone)
         static func fromUserDefaults() -> Configuration {
-            let defaults = UserDefaults(suiteName: "group.se.flickslides.app") ?? .standard
+            let defaults = UserDefaults(suiteName: "group.com.kristianniemi.FlickSlides") ?? .standard
 
             let accelThreshold = defaults.object(forKey: UserDefaultsKeys.accelerationThreshold) as? Double
                 ?? Defaults.accelerationThreshold
