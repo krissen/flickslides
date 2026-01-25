@@ -59,6 +59,7 @@ struct ContentView: View {
                             Image(systemName: "chevron.left.circle.fill")
                                 .font(.largeTitle)
                         }
+                        .buttonStyle(.borderless)
                         .disabled(macConnection.connectedMac == nil)
 
                         Spacer()
@@ -67,6 +68,7 @@ struct ContentView: View {
                             Image(systemName: "rectangle.fill")
                                 .font(.title)
                         }
+                        .buttonStyle(.borderless)
                         .disabled(macConnection.connectedMac == nil)
                         .tint(.orange)
 
@@ -76,6 +78,7 @@ struct ContentView: View {
                             Image(systemName: "chevron.right.circle.fill")
                                 .font(.largeTitle)
                         }
+                        .buttonStyle(.borderless)
                         .disabled(macConnection.connectedMac == nil)
                     }
                     .padding(.vertical)
