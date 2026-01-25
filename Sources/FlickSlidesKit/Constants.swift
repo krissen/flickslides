@@ -2,8 +2,8 @@ import Foundation
 
 /// Konstanter för FlickSlides.
 public enum FlickSlidesConstants {
-    /// Service-typ för MultipeerConnectivity
-    public static let multipeerServiceType = "flickslides-ctrl"  // Max 15 tecken
+    /// Service-typ för MultipeerConnectivity (max 15 tecken, lowercase + hyphen)
+    public static let multipeerServiceType = "flickslides-ctl"  // 15 tecken exakt
 
     /// Bonjour service-typ (alternativ)
     public static let bonjourServiceType = "_flickslides._tcp"
