@@ -1,6 +1,7 @@
 name: FlickSlides
 options:
   bundleIdPrefix: com.kristianniemi
+  developmentTeam: P7QL2DWJKX
   deploymentTarget:
     iOS: "18.0"
     macOS: "15.0"
