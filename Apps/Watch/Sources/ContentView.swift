@@ -6,54 +6,43 @@ struct ContentView: View {
     @StateObject private var presentationManager = PresentationManager.shared
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 12) {
-                // Titel
-                Text("FlickSlides")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.bottom, 8)
+        VStack(spacing: 8) {
+            // Status
+            statusSection
 
-                // Status
-                statusSection
-                    .padding(.bottom, 8)
+            Spacer()
 
-                Spacer()
+            // Huvudknapp
+            mainButton
 
-                // Huvudknapp
-                mainButton
+            Spacer()
 
-                Spacer()
-
-                // Fallback-knappar
-                fallbackButtons
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 12)
+            // Fallback-knappar
+            fallbackButtons
         }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 8)
     }
 
     // MARK: - Status Section
 
     private var statusSection: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 2) {
             HStack(spacing: 6) {
                 Circle()
                     .fill(presentationManager.isPresentationMode ? .green : .gray)
                     .frame(width: 8, height: 8)
                 Text(presentationManager.isPresentationMode ? "Aktivt" : "Inaktivt")
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundStyle(.secondary)
             }
 
             Text(presentationManager.connectionState)
-                .font(.system(size: 11))
+                .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
                 .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .minimumScaleFactor(0.7)
         }
-        .padding(.top, 4)
     }
 
     // MARK: - Main Button
@@ -87,14 +76,14 @@ struct ContentView: View {
     // MARK: - Fallback Buttons
 
     private var fallbackButtons: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 16) {
             Button {
                 sendFallbackCommand("PREV")
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.title2)
+                    .font(.title3)
                     .fontWeight(.semibold)
-                    .frame(width: 50, height: 44)
+                    .frame(width: 44, height: 36)
             }
             .buttonStyle(.bordered)
             .disabled(!presentationManager.isPresentationMode)
@@ -104,15 +93,14 @@ struct ContentView: View {
                 sendFallbackCommand("NEXT")
             } label: {
                 Image(systemName: "chevron.right")
-                    .font(.title2)
+                    .font(.title3)
                     .fontWeight(.semibold)
-                    .frame(width: 50, height: 44)
+                    .frame(width: 44, height: 36)
             }
             .buttonStyle(.bordered)
             .disabled(!presentationManager.isPresentationMode)
             .opacity(presentationManager.isPresentationMode ? 1.0 : 0.4)
         }
-        .padding(.bottom, 4)
     }
 
     private func sendFallbackCommand(_ command: String) {
