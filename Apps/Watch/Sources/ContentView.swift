@@ -7,9 +7,17 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
+                // Titel
+                Text("FlickSlides")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.bottom, 8)
+
                 // Status
                 statusSection
+                    .padding(.bottom, 8)
 
                 Spacer()
 
@@ -23,8 +31,6 @@ struct ContentView: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 12)
-            .navigationTitle("FlickSlides")
-            .navigationBarTitleDisplayMode(.inline)
         }
     }
 
