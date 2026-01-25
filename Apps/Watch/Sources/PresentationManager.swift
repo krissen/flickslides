@@ -1,9 +1,9 @@
 import Foundation
-import HealthKit
 import WatchConnectivity
 import WatchKit
 
-/// Hanterar presentationsläge, workout session och WCSession-kommunikation.
+/// Hanterar presentationsläge och WCSession-kommunikation.
+/// HealthKit/HKWorkoutSession är tillfälligt inaktiverat för enklare testning.
 @MainActor
 final class PresentationManager: NSObject, ObservableObject {
 
@@ -18,9 +18,11 @@ final class PresentationManager: NSObject, ObservableObject {
     // MARK: - Dependencies
 
     private let gestureDetector = GestureDetector()
-    private let healthStore = HKHealthStore()
-    private var workoutSession: HKWorkoutSession?
-    private var workoutBuilder: HKLiveWorkoutBuilder?
+
+    // TODO: Lägg till HKWorkoutSession när signering är löst
+    // private let healthStore = HKHealthStore()
+    // private var workoutSession: HKWorkoutSession?
+    // private var workoutBuilder: HKLiveWorkoutBuilder?
 
     // MARK: - Initialization
 
@@ -45,13 +47,9 @@ final class PresentationManager: NSObject, ObservableObject {
     func startPresentation() async {
         guard !isPresentationMode else { return }
 
-        // Starta workout session för bakgrundsaktivitet
-        do {
-            try await startWorkoutSession()
-        } catch {
-            print("[PresentationManager] Failed to start workout: \(error)")
-            // Fortsätt ändå - fungerar i förgrund
-        }
+        // TODO: Starta workout session för bakgrundsaktivitet
+        // Tillfälligt inaktiverat - sensorer fungerar bara i förgrunden
+        print("[PresentationManager] Note: Background sensors disabled (no HealthKit)")
 
         // Starta gestdetektering
         gestureDetector.start { [weak self] gesture in
@@ -72,39 +70,11 @@ final class PresentationManager: NSObject, ObservableObject {
 
         gestureDetector.stop()
 
-        if let session = workoutSession {
-            session.end()
-            workoutSession = nil
-        }
-
         isPresentationMode = false
 
         // Haptisk feedback
         WKInterfaceDevice.current().play(.stop)
         print("[PresentationManager] Presentation stopped")
-    }
-
-    // MARK: - Workout Session
-
-    private func startWorkoutSession() async throws {
-        let configuration = HKWorkoutConfiguration()
-        configuration.activityType = .other
-        configuration.locationType = .indoor
-
-        workoutSession = try HKWorkoutSession(
-            healthStore: healthStore,
-            configuration: configuration
-        )
-        workoutBuilder = workoutSession?.associatedWorkoutBuilder()
-        workoutBuilder?.dataSource = HKLiveWorkoutDataSource(
-            healthStore: healthStore,
-            workoutConfiguration: configuration
-        )
-
-        workoutSession?.startActivity(with: Date())
-        try await workoutBuilder?.beginCollection(at: Date())
-
-        print("[PresentationManager] Workout session started")
     }
 
     // MARK: - Gesture Handling
