@@ -88,10 +88,24 @@ final class PresentationManager: NSObject, ObservableObject {
         self.workoutBuilder = nil
     }
 
+    private func requestHealthKitAuthorization() async {
+        let workoutType = HKQuantityType.workoutType()
+
+        do {
+            try await healthStore.requestAuthorization(toShare: [workoutType], read: [])
+            print("[PresentationManager] HealthKit authorization granted")
+        } catch {
+            print("[PresentationManager] HealthKit authorization failed: \(error)")
+        }
+    }
+
     // MARK: - Presentation Control
 
     func startPresentation() async {
         guard !isPresentationMode else { return }
+
+        // Begär HealthKit-auktorisering
+        await requestHealthKitAuthorization()
 
         // Starta workout session för bakgrundsaktivitet
         do {
