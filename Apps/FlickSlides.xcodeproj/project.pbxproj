@@ -245,15 +245,15 @@
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					69CE189A548DEE08153E0019 = {
-						DevelopmentTeam = P7QL2DWJKX;
+						DevelopmentTeam = 7GYVML3XJG;
 						ProvisioningStyle = Automatic;
 					};
 					77A7AC4A871EB5A36A6FA3FC = {
-						DevelopmentTeam = P7QL2DWJKX;
+						DevelopmentTeam = 7GYVML3XJG;
 						ProvisioningStyle = Automatic;
 					};
 					90364508E1764FD58393EB14 = {
-						DevelopmentTeam = P7QL2DWJKX;
+						DevelopmentTeam = 7GYVML3XJG;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -338,7 +338,7 @@
 				CODE_SIGN_ENTITLEMENTS = Phone/FlickSlidesPhone.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = P7QL2DWJKX;
+				DEVELOPMENT_TEAM = 7GYVML3XJG;
 				INFOPLIST_FILE = Phone/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -478,7 +478,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Watch/FlickSlidesWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = P7QL2DWJKX;
+				DEVELOPMENT_TEAM = 7GYVML3XJG;
 				INFOPLIST_FILE = Watch/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kristianniemi.FlickSlides.watchkitapp;
 				SDKROOT = watchos;
@@ -495,7 +495,7 @@
 				CODE_SIGN_ENTITLEMENTS = Mac/FlickSlidesMac.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = P7QL2DWJKX;
+				DEVELOPMENT_TEAM = 7GYVML3XJG;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Mac/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -514,7 +514,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Watch/FlickSlidesWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = P7QL2DWJKX;
+				DEVELOPMENT_TEAM = 7GYVML3XJG;
 				INFOPLIST_FILE = Watch/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kristianniemi.FlickSlides.watchkitapp;
 				SDKROOT = watchos;
@@ -531,7 +531,7 @@
 				CODE_SIGN_ENTITLEMENTS = Phone/FlickSlidesPhone.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = P7QL2DWJKX;
+				DEVELOPMENT_TEAM = 7GYVML3XJG;
 				INFOPLIST_FILE = Phone/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -551,7 +551,7 @@
 				CODE_SIGN_ENTITLEMENTS = Mac/FlickSlidesMac.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = P7QL2DWJKX;
+				DEVELOPMENT_TEAM = 7GYVML3XJG;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Mac/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

@@ -1,7 +1,7 @@
 name: FlickSlides
 options:
   bundleIdPrefix: com.kristianniemi
-  developmentTeam: P7QL2DWJKX
+  developmentTeam: 7GYVML3XJG
   deploymentTarget:
     iOS: "18.0"
     macOS: "15.0"
@@ -34,7 +34,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kristianniemi.FlickSlides.watchkitapp
         SWIFT_VERSION: "5.9"
-        DEVELOPMENT_TEAM: P7QL2DWJKX
+        DEVELOPMENT_TEAM: 7GYVML3XJG
         CODE_SIGN_STYLE: Automatic
     dependencies:
       - package: FlickSlidesKit
@@ -63,7 +63,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.kristianniemi.FlickSlides
         SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1"
-        DEVELOPMENT_TEAM: P7QL2DWJKX
+        DEVELOPMENT_TEAM: 7GYVML3XJG
         CODE_SIGN_STYLE: Automatic
     dependencies:
       - package: FlickSlidesKit
@@ -89,7 +89,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kristianniemi.FlickSlidesMac
         SWIFT_VERSION: "5.9"
-        DEVELOPMENT_TEAM: P7QL2DWJKX
+        DEVELOPMENT_TEAM: 7GYVML3XJG
         CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: YES
     dependencies:
