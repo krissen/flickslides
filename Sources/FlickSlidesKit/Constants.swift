@@ -9,10 +9,10 @@ public enum FlickSlidesConstants {
     public static let bonjourServiceType = "_flickslides._tcp"
 
     /// Debounce-intervall mellan gester (sekunder)
-    public static let gestureDebounceInterval: TimeInterval = 1.0
+    public static let gestureDebounceInterval: TimeInterval = 1.5
 
     /// Minimum acceleration för att räknas som gest (g)
-    public static let accelerationThreshold: Double = 0.8
+    public static let accelerationThreshold: Double = 1.5
 
     /// Minimum rotation för handflick (grader)
     public static let rotationThreshold: Double = 18.0
