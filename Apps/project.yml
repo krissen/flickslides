@@ -30,9 +30,6 @@ targets:
         WKRunsIndependentlyOfCompanionApp: true
         NSHealthShareUsageDescription: "FlickSlides does not access your health data. A workout session is created solely to keep motion sensors active during presentations."
         NSHealthUpdateUsageDescription: "FlickSlides saves a minimal workout session to enable background gesture detection. No actual workout data is collected."
-    entitlements:
-      path: Watch/FlickSlidesWatch.entitlements
-      # HealthKit capabilities hanteras manuellt i Xcode
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kristianniemi.FlickSlides.watchkitapp
@@ -40,6 +37,7 @@ targets:
         DEVELOPMENT_TEAM: 7GYVML3XJG
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
+        CODE_SIGN_ENTITLEMENTS: Watch/FlickSlidesWatch.entitlements
     dependencies:
       - package: FlickSlidesKit
 
