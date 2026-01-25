@@ -32,10 +32,7 @@ targets:
         NSHealthUpdateUsageDescription: "FlickSlides saves a minimal workout session to enable background gesture detection. No actual workout data is collected."
     entitlements:
       path: Watch/FlickSlidesWatch.entitlements
-    capabilities:
-      - HealthKit:
-          capabilities:
-            - background-delivery
+      # HealthKit capabilities hanteras manuellt i Xcode
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kristianniemi.FlickSlides.watchkitapp
