@@ -145,6 +145,9 @@ final class GestureDetector: ObservableObject {
         let rotMagnitudeDeg = rotMagnitudeRad * 180.0 / .pi
         currentRotationRate = rotMagnitudeDeg
 
+        // Rotation Z i grader/sekund (för riktningsbestämning)
+        let rotZDeg = rot.z * 180.0 / .pi
+
         // Håll koll på senaste värden för peak-detection
         recentAccelerations.append(accMagnitude)
         if recentAccelerations.count > peakWindowSize {
@@ -162,19 +165,28 @@ final class GestureDetector: ObservableObject {
             return
         }
 
+        // Filtrera bort vertikala rörelser (lyft/sänk arm)
+        // Om Y-acceleration dominerar är det troligen inte en "flick"
+        let dominated = max(abs(acc.x), abs(acc.y), abs(acc.z))
+        let isVerticalMovement = abs(acc.y) == dominated && abs(acc.y) > 0.8
+
+        if isVerticalMovement {
+            return  // Ignorera vertikala rörelser
+        }
+
         // Detektera gest: kräv BÅDE acceleration OCH rotation över respektive tröskelvärde
         let accelerationOK = accMagnitude > configuration.accelerationThreshold
         let rotationOK = rotMagnitudeDeg > configuration.rotationThreshold
 
         if accelerationOK && rotationOK && isPeak(accMagnitude) {
-            let direction = determineDirection(acc)
+            let direction = determineDirection(rotZ: rotZDeg)
             let gesture = DetectedGesture.flick(direction: direction)
 
             lastGestureTime = now
             lastDetectedGesture = gesture
             onGestureDetected?(gesture)
 
-            print("[GestureDetector] Detected: \(gesture) | accel=\(String(format: "%.2f", accMagnitude))g | rot=\(String(format: "%.1f", rotMagnitudeDeg))°/s")
+            print("[GestureDetector] Detected: \(gesture) | accel=\(String(format: "%.2f", accMagnitude))g | rot=\(String(format: "%.1f", rotMagnitudeDeg))°/s | rotZ=\(String(format: "%.1f", rotZDeg))°/s | acc(x=\(String(format: "%.2f", acc.x)), y=\(String(format: "%.2f", acc.y)), z=\(String(format: "%.2f", acc.z)))")
         }
     }
 
@@ -185,10 +197,13 @@ final class GestureDetector: ObservableObject {
                value >= recentAccelerations[lastIndex - 2]
     }
 
-    /// Bestäm riktning baserat på X-axelns accelerationsaxel
-    private func determineDirection(_ acc: CMAcceleration) -> DetectedGesture.FlickDirection {
-        // X-axeln är typiskt framåt/bakåt när armen är i presentationsställning
-        // Positiv X = framåt (nästa), Negativ X = bakåt (föregående)
-        return acc.x > 0 ? .forward : .backward
+    /// Bestäm riktning baserat på rotation Z-axeln (handledsvridning)
+    /// På vänster handled med klockan uppåt:
+    /// - Positiv rotZ = vrid handleden utåt (supination) = PREV (bakåt)
+    /// - Negativ rotZ = vrid handleden inåt (pronation) = NEXT (framåt)
+    private func determineDirection(rotZ: Double) -> DetectedGesture.FlickDirection {
+        // "Bladvänd höger" (NEXT): hand roterar inåt, klocka vänds nedåt
+        // "Bladvänd vänster" (PREV): hand roterar utåt, klocka vänds uppåt
+        return rotZ < 0 ? .forward : .backward
     }
 }
