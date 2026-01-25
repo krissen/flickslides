@@ -240,15 +240,12 @@ final class GestureDetector: ObservableObject {
             return
         }
 
-        // Filtrera arm-lyft
-        if isArmLift(acc: acc, rot: rot) {
-            if case .idle = gestureState {
-                // Tyst filtrering i idle
-            } else {
-                log("Rejected: arm-lift detected, resetting state")
-                resetState()
+        // Filtrera arm-lyft endast i idle state
+        // När en gest väl har startat, låt den fortsätta
+        if case .idle = gestureState {
+            if isArmLift(acc: acc, rot: rot) {
+                return  // Tyst filtrering
             }
-            return
         }
 
         // State machine processing

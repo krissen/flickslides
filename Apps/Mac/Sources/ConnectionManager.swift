@@ -31,7 +31,10 @@ final class ConnectionManager: NSObject, ObservableObject {
         "com.google.Chrome",
         "com.apple.Safari",
         "org.mozilla.firefox",
-        "com.adobe.Reader",              // Adobe Acrobat Reader
+        "com.adobe.Reader",              // Adobe Acrobat Reader (äldre)
+        "com.adobe.Acrobat",             // Adobe Acrobat (nyare)
+        "com.adobe.Acrobat.Pro",         // Adobe Acrobat Pro
+        "com.adobe.AcrobatReader",       // Alternativt namn
         "net.sourceforge.skim-app.skim"  // Skim PDF viewer
     ]
 
