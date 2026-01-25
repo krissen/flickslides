@@ -34,6 +34,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kristianniemi.FlickSlides.watchkitapp
         SWIFT_VERSION: "5.9"
+        DEVELOPMENT_TEAM: P7QL2DWJKX
+        CODE_SIGN_STYLE: Automatic
     dependencies:
       - package: FlickSlidesKit
 
@@ -61,6 +63,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.kristianniemi.FlickSlides
         SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1"
+        DEVELOPMENT_TEAM: P7QL2DWJKX
+        CODE_SIGN_STYLE: Automatic
     dependencies:
       - package: FlickSlidesKit
       - target: FlickSlidesWatch
@@ -85,7 +89,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kristianniemi.FlickSlidesMac
         SWIFT_VERSION: "5.9"
-        CODE_SIGN_IDENTITY: "Developer ID Application"
+        DEVELOPMENT_TEAM: P7QL2DWJKX
+        CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: YES
     dependencies:
       - package: FlickSlidesKit
