@@ -33,6 +33,7 @@ final class GestureDetector: ObservableObject {
         static let gestureDebounceInterval: Double = 1.5    // sekunder
         static let samplingRate: Double = 50.0              // Hz
         static let gestureTimeout: Double = 0.6             // sekunder - max tid för en gest
+        static let gestureMinDuration: Double = 0.08        // sekunder - minimum tid för en gest (80ms)
         static let armLiftYMultiplier: Double = 1.5         // Y > X * multiplier = arm-lyft
         static let armLiftMinX: Double = 0.5                // g - minimum X för att inte vara arm-lyft
         static let initiationRotationThreshold: Double = 10.0  // grader/sekund - start av rotation
@@ -211,8 +212,8 @@ final class GestureDetector: ObservableObject {
         currentRotationRate = rotMagnitudeRad * 180.0 / .pi
 
         // Effektiv rotation med hänsyn till vilken handled
-        // Höger handled: rotation är inverterad relativt klockan
-        let effectiveRotX = configuration.watchOnRightWrist ? -rotXDeg : rotXDeg
+        // Vänster handled: rotation är inverterad relativt klockan
+        let effectiveRotX = configuration.watchOnRightWrist ? rotXDeg : -rotXDeg
 
         // Håll koll på senaste värden för peak-detection
         updateAccelerationWindow(accMagnitude)
@@ -336,11 +337,18 @@ final class GestureDetector: ObservableObject {
         peakAcceleration: Double,
         effectiveRotX: Double
     ) {
-        // Timeout-kontroll
         let elapsed = now.timeIntervalSince(startTime)
+
+        // Timeout-kontroll (för lång)
         if elapsed > configuration.gestureTimeout {
             log("Rejected: timeout in peaked state (\(String(format: "%.0f", elapsed * 1000))ms)")
             resetState()
+            return
+        }
+
+        // Minimum duration-kontroll (för kort = troligen inte en riktig gest)
+        if elapsed < Defaults.gestureMinDuration {
+            // Vänta - gesten är inte klar ännu
             return
         }
 

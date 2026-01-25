@@ -119,6 +119,9 @@ final class PresentationManager: NSObject, ObservableObject {
             print("[PresentationManager] Continuing without background support")
         }
 
+        // Ladda om konfiguration (hämta ev. nya inställningar från iPhone)
+        gestureDetector.reloadConfiguration()
+
         // Starta gestdetektering
         gestureDetector.start { [weak self] gesture in
             Task { @MainActor in
