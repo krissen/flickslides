@@ -1,18 +1,42 @@
 import Foundation
 import CoreMotion
 
-/// Gestigenkänning baserad på accelerometer/gyroskop-data.
-/// Kräver att BÅDE acceleration OCH rotation överskrider tröskelvärden för gestdetektering.
+/// Gestigenkänning baserad på accelerometer/gyroskop-data med state machine.
+///
+/// ## State Machine
+/// ```
+/// idle → initiated → peaked → completed
+/// ```
+///
+/// ## Koordinatsystem på Apple Watch
+/// ```
+///     +Y (upp längs urtavlan)
+///      |
+/// -----+------ +X (mot kronan/höger)
+///     /
+///    +Z (ut från skärmen)
+/// ```
+///
+/// ## Rätt rotationsaxel för bladvänd-gest
+/// - `rot.x` = pronation/supination (vrid handled inåt/utåt)
+/// - Positiv rot.x = pronation (hand vrids inåt) = NEXT
+/// - Negativ rot.x = supination (hand vrids utåt) = PREV
+///
 @MainActor
 final class GestureDetector: ObservableObject {
 
     // MARK: - Constants
 
     private enum Defaults {
-        static let accelerationThreshold: Double = 1.5
-        static let rotationThreshold: Double = 30.0  // grader/sekund
-        static let gestureDebounceInterval: Double = 1.5
-        static let samplingRate: Double = 50.0
+        static let accelerationThreshold: Double = 1.5      // g - minimum acceleration
+        static let rotationThreshold: Double = 30.0         // grader/sekund
+        static let gestureDebounceInterval: Double = 1.5    // sekunder
+        static let samplingRate: Double = 50.0              // Hz
+        static let gestureTimeout: Double = 0.6             // sekunder - max tid för en gest
+        static let armLiftYMultiplier: Double = 1.5         // Y > X * multiplier = arm-lyft
+        static let armLiftMinX: Double = 0.5                // g - minimum X för att inte vara arm-lyft
+        static let initiationRotationThreshold: Double = 10.0  // grader/sekund - start av rotation
+        static let peakAccelerationRatio: Double = 0.8      // peak måste vara minst 80% av max
     }
 
     private enum UserDefaultsKeys {
@@ -20,6 +44,30 @@ final class GestureDetector: ObservableObject {
         static let rotationThreshold = "rotationThreshold"
         static let gestureDebounceInterval = "gestureDebounceInterval"
         static let watchOnRightWrist = "watchOnRightWrist"
+    }
+
+    // MARK: - State Machine
+
+    private enum GestureState: CustomStringConvertible {
+        case idle
+        case initiated(startTime: Date, direction: GestureDirection)
+        case peaked(startTime: Date, direction: GestureDirection, peakAcceleration: Double)
+
+        var description: String {
+            switch self {
+            case .idle:
+                return "idle"
+            case .initiated(_, let direction):
+                return "initiated(\(direction))"
+            case .peaked(_, let direction, let peak):
+                return "peaked(\(direction), peak=\(String(format: "%.2f", peak))g)"
+            }
+        }
+    }
+
+    private enum GestureDirection {
+        case forward   // NEXT - pronation (positiv rot.x)
+        case backward  // PREV - supination (negativ rot.x)
     }
 
     // MARK: - Published State
@@ -47,6 +95,9 @@ final class GestureDetector: ObservableObject {
         /// Klockan sitter på höger handled (påverkar rotationsriktning)
         var watchOnRightWrist: Bool
 
+        /// Max tid för en gest från initiation till completion (sekunder)
+        var gestureTimeout: TimeInterval
+
         /// Skapar konfiguration med värden från UserDefaults (med app group för delning med iPhone)
         static func fromUserDefaults() -> Configuration {
             let defaults = UserDefaults(suiteName: "group.com.kristianniemi.FlickSlides") ?? .standard
@@ -64,7 +115,8 @@ final class GestureDetector: ObservableObject {
                 rotationThreshold: rotThreshold,
                 debounceInterval: debounce,
                 samplingRate: Defaults.samplingRate,
-                watchOnRightWrist: rightWrist
+                watchOnRightWrist: rightWrist,
+                gestureTimeout: Defaults.gestureTimeout
             )
         }
     }
@@ -88,8 +140,13 @@ final class GestureDetector: ObservableObject {
     private let motionManager = CMMotionManager()
     private var lastGestureTime: Date = .distantPast
     private var onGestureDetected: ((DetectedGesture) -> Void)?
+
+    // State machine
+    private var gestureState: GestureState = .idle
+
+    // Peak detection window
     private var recentAccelerations: [Double] = []
-    private var recentRotations: [Double] = []
+    private var maxAccelerationInGesture: Double = 0
     private let peakWindowSize = 10
 
     // MARK: - Initialization
@@ -102,7 +159,7 @@ final class GestureDetector: ObservableObject {
 
     func start(onGesture: @escaping (DetectedGesture) -> Void) {
         guard motionManager.isDeviceMotionAvailable else {
-            print("[GestureDetector] Device motion not available")
+            log("Device motion not available")
             return
         }
 
@@ -119,51 +176,46 @@ final class GestureDetector: ObservableObject {
         }
 
         isActive = true
-        print("[GestureDetector] Started with \(configuration.samplingRate) Hz")
+        log("Started with \(configuration.samplingRate) Hz, wrist=\(configuration.watchOnRightWrist ? "right" : "left")")
     }
 
     func stop() {
         motionManager.stopDeviceMotionUpdates()
         isActive = false
         onGestureDetected = nil
-        recentAccelerations.removeAll()
-        recentRotations.removeAll()
-        print("[GestureDetector] Stopped")
+        resetState()
+        log("Stopped")
     }
 
     /// Laddar om konfiguration från UserDefaults (anropas t.ex. vid app-aktivering)
     func reloadConfiguration() {
         configuration = Configuration.fromUserDefaults()
-        print("[GestureDetector] Configuration reloaded: accel=\(configuration.accelerationThreshold)g, rot=\(configuration.rotationThreshold)°/s, debounce=\(configuration.debounceInterval)s")
+        log("Configuration reloaded: accel=\(configuration.accelerationThreshold)g, rot=\(configuration.rotationThreshold)°/s, debounce=\(configuration.debounceInterval)s, wrist=\(configuration.watchOnRightWrist ? "right" : "left")")
     }
 
     // MARK: - Motion Processing
 
     private func processMotion(_ motion: CMDeviceMotion) {
-        // Läs acceleration
         let acc = motion.userAcceleration
+        let rot = motion.rotationRate
+
+        // Beräkna magnituder
         let accMagnitude = sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z)
         currentAcceleration = accMagnitude
 
-        // Läs rotation rate (radianer/sekund → grader/sekund)
-        let rot = motion.rotationRate
-        let rotMagnitudeRad = sqrt(rot.x * rot.x + rot.y * rot.y + rot.z * rot.z)
-        let rotMagnitudeDeg = rotMagnitudeRad * 180.0 / .pi
-        currentRotationRate = rotMagnitudeDeg
+        // Rotation X i grader/sekund (primär axel för bladvänd)
+        let rotXDeg = rot.x * 180.0 / .pi
 
-        // Rotation Z i grader/sekund (för riktningsbestämning)
-        let rotZDeg = rot.z * 180.0 / .pi
+        // Rotation magnitude för display
+        let rotMagnitudeRad = sqrt(rot.x * rot.x + rot.y * rot.y + rot.z * rot.z)
+        currentRotationRate = rotMagnitudeRad * 180.0 / .pi
+
+        // Effektiv rotation med hänsyn till vilken handled
+        // Höger handled: rotation är inverterad relativt klockan
+        let effectiveRotX = configuration.watchOnRightWrist ? -rotXDeg : rotXDeg
 
         // Håll koll på senaste värden för peak-detection
-        recentAccelerations.append(accMagnitude)
-        if recentAccelerations.count > peakWindowSize {
-            recentAccelerations.removeFirst()
-        }
-
-        recentRotations.append(rotMagnitudeDeg)
-        if recentRotations.count > peakWindowSize {
-            recentRotations.removeFirst()
-        }
+        updateAccelerationWindow(accMagnitude)
 
         // Kolla debounce
         let now = Date()
@@ -171,45 +223,242 @@ final class GestureDetector: ObservableObject {
             return
         }
 
-        // Filtrera bort vertikala rörelser (lyft/sänk arm)
-        // Om Y-acceleration dominerar är det troligen inte en "flick"
-        let dominated = max(abs(acc.x), abs(acc.y), abs(acc.z))
-        let isVerticalMovement = abs(acc.y) == dominated && abs(acc.y) > 0.8
-
-        if isVerticalMovement {
-            return  // Ignorera vertikala rörelser
+        // Filtrera arm-lyft
+        if isArmLift(acc: acc, rot: rot) {
+            if case .idle = gestureState {
+                // Tyst filtrering i idle
+            } else {
+                log("Rejected: arm-lift detected, resetting state")
+                resetState()
+            }
+            return
         }
 
-        // Detektera gest: kräv BÅDE acceleration OCH rotation över respektive tröskelvärde
-        let accelerationOK = accMagnitude > configuration.accelerationThreshold
-        let rotationOK = rotMagnitudeDeg > configuration.rotationThreshold
+        // State machine processing
+        processStateMachine(
+            now: now,
+            acc: acc,
+            accMagnitude: accMagnitude,
+            effectiveRotX: effectiveRotX
+        )
+    }
 
-        if accelerationOK && rotationOK && isPeak(accMagnitude) {
-            let direction = determineDirection(rotZ: rotZDeg)
-            let gesture = DetectedGesture.flick(direction: direction)
+    // MARK: - State Machine
 
-            lastGestureTime = now
-            lastDetectedGesture = gesture
-            onGestureDetected?(gesture)
+    private func processStateMachine(
+        now: Date,
+        acc: CMAcceleration,
+        accMagnitude: Double,
+        effectiveRotX: Double
+    ) {
+        switch gestureState {
+        case .idle:
+            handleIdleState(now: now, acc: acc, accMagnitude: accMagnitude, effectiveRotX: effectiveRotX)
 
-            print("[GestureDetector] Detected: \(gesture) | accel=\(String(format: "%.2f", accMagnitude))g | rot=\(String(format: "%.1f", rotMagnitudeDeg))°/s | rotZ=\(String(format: "%.1f", rotZDeg))°/s | acc(x=\(String(format: "%.2f", acc.x)), y=\(String(format: "%.2f", acc.y)), z=\(String(format: "%.2f", acc.z)))")
+        case .initiated(let startTime, let direction):
+            handleInitiatedState(now: now, startTime: startTime, direction: direction, accMagnitude: accMagnitude, effectiveRotX: effectiveRotX)
+
+        case .peaked(let startTime, let direction, let peakAcceleration):
+            handlePeakedState(now: now, startTime: startTime, direction: direction, peakAcceleration: peakAcceleration, effectiveRotX: effectiveRotX)
+        }
+    }
+
+    private func handleIdleState(
+        now: Date,
+        acc: CMAcceleration,
+        accMagnitude: Double,
+        effectiveRotX: Double
+    ) {
+        // Krav för initiation:
+        // 1. X-acceleration dominerar över Y (sidledrörelse, inte arm-lyft)
+        // 2. Rotation påbörjad i någon riktning
+        // 3. Acceleration över minimum
+
+        let absX = abs(acc.x)
+        let absY = abs(acc.y)
+        let xDominates = absX > absY * 0.7  // X ska vara betydande
+
+        let rotationStarted = abs(effectiveRotX) > Defaults.initiationRotationThreshold
+        let sufficientAcceleration = accMagnitude > configuration.accelerationThreshold * 0.5
+
+        guard xDominates && rotationStarted && sufficientAcceleration else {
+            return
+        }
+
+        // Bestäm riktning baserat på rotation
+        let direction: GestureDirection = effectiveRotX > 0 ? .forward : .backward
+
+        gestureState = .initiated(startTime: now, direction: direction)
+        maxAccelerationInGesture = accMagnitude
+
+        log("State: idle → initiated(\(direction)) | rotX=\(String(format: "%.1f", effectiveRotX))°/s | acc=\(String(format: "%.2f", accMagnitude))g")
+    }
+
+    private func handleInitiatedState(
+        now: Date,
+        startTime: Date,
+        direction: GestureDirection,
+        accMagnitude: Double,
+        effectiveRotX: Double
+    ) {
+        // Timeout-kontroll
+        let elapsed = now.timeIntervalSince(startTime)
+        if elapsed > configuration.gestureTimeout {
+            log("Rejected: timeout in initiated state (\(String(format: "%.0f", elapsed * 1000))ms)")
+            resetState()
+            return
+        }
+
+        // Kontrollera att rotation fortsätter i rätt riktning
+        let rotationConsistent = isRotationConsistent(effectiveRotX: effectiveRotX, direction: direction)
+        if !rotationConsistent {
+            log("Rejected: rotation direction changed in initiated state")
+            resetState()
+            return
+        }
+
+        // Uppdatera max acceleration
+        if accMagnitude > maxAccelerationInGesture {
+            maxAccelerationInGesture = accMagnitude
+        }
+
+        // Kontrollera om vi nått peak
+        if isPeak(accMagnitude) && accMagnitude >= configuration.accelerationThreshold {
+            gestureState = .peaked(startTime: startTime, direction: direction, peakAcceleration: accMagnitude)
+            log("State: initiated → peaked | peak=\(String(format: "%.2f", accMagnitude))g")
+        }
+    }
+
+    private func handlePeakedState(
+        now: Date,
+        startTime: Date,
+        direction: GestureDirection,
+        peakAcceleration: Double,
+        effectiveRotX: Double
+    ) {
+        // Timeout-kontroll
+        let elapsed = now.timeIntervalSince(startTime)
+        if elapsed > configuration.gestureTimeout {
+            log("Rejected: timeout in peaked state (\(String(format: "%.0f", elapsed * 1000))ms)")
+            resetState()
+            return
+        }
+
+        // Kontrollera rotation
+        let rotationConfirmed = abs(effectiveRotX) >= configuration.rotationThreshold
+        let rotationConsistent = isRotationConsistent(effectiveRotX: effectiveRotX, direction: direction)
+
+        if !rotationConsistent {
+            log("Rejected: rotation direction inconsistent in peaked state")
+            resetState()
+            return
+        }
+
+        if rotationConfirmed {
+            // Gest bekräftad!
+            completeGesture(direction: direction, peakAcceleration: peakAcceleration, rotX: effectiveRotX, elapsed: elapsed)
+        }
+    }
+
+    private func completeGesture(
+        direction: GestureDirection,
+        peakAcceleration: Double,
+        rotX: Double,
+        elapsed: TimeInterval
+    ) {
+        let flickDirection: DetectedGesture.FlickDirection = direction == .forward ? .forward : .backward
+        let gesture = DetectedGesture.flick(direction: flickDirection)
+
+        lastGestureTime = Date()
+        lastDetectedGesture = gesture
+        onGestureDetected?(gesture)
+
+        log("DETECTED: \(flickDirection) | peak=\(String(format: "%.2f", peakAcceleration))g | rotX=\(String(format: "%.1f", rotX))°/s | time=\(String(format: "%.0f", elapsed * 1000))ms")
+
+        resetState()
+    }
+
+    // MARK: - Arm-Lift Filter
+
+    /// Detekterar arm-lyft och andra icke-bladvänd-rörelser som ska ignoreras.
+    ///
+    /// Bladvänd-gest kräver:
+    /// - X-acceleration dominerar (sidledrörelse)
+    /// - rot.x dominerar (pronation/supination)
+    ///
+    /// Ignorera om:
+    /// - Y eller Z dominerar (vertikal rörelse eller framåt/bakåt)
+    /// - rot.z dominerar över rot.x (vridning utan bladvänd)
+    private func isArmLift(acc: CMAcceleration, rot: CMRotationRate) -> Bool {
+        let absX = abs(acc.x)
+        let absY = abs(acc.y)
+        let absZ = abs(acc.z)
+
+        // Rotationer i grader/sekund
+        let rotXDeg = abs(rot.x) * 180.0 / .pi
+        let rotZDeg = abs(rot.z) * 180.0 / .pi
+
+        // 1. Z-acceleration dominerar = rörelse framåt/bakåt från kroppen (typiskt arm-lyft)
+        let zDominatesAccel = absZ > absX * 1.5 && absZ > 1.0
+        if zDominatesAccel {
+            return true
+        }
+
+        // 2. Y-acceleration dominerar och X är låg = ren vertikal rörelse
+        let yDominatesOverX = absY > absX * Defaults.armLiftYMultiplier
+        let lowXAcceleration = absX < Defaults.armLiftMinX
+        if yDominatesOverX && lowXAcceleration {
+            return true
+        }
+
+        // 3. rot.z dominerar kraftigt över rot.x = vridning utan pronation/supination
+        //    (ren sidledssvepning utan bladvänd-rotation)
+        let zRotationDominates = rotZDeg > rotXDeg * 3.0 && rotZDeg > 100.0
+        if zRotationDominates {
+            return true
+        }
+
+        return false
+    }
+
+    // MARK: - Helper Methods
+
+    private func isRotationConsistent(effectiveRotX: Double, direction: GestureDirection) -> Bool {
+        // Rotation måste vara i samma riktning som initierad
+        // Tillåt lite slack för brus
+        let minRotation: Double = 5.0  // grader/sekund
+
+        switch direction {
+        case .forward:
+            return effectiveRotX > -minRotation  // Ska vara positiv eller nära noll
+        case .backward:
+            return effectiveRotX < minRotation   // Ska vara negativ eller nära noll
+        }
+    }
+
+    private func updateAccelerationWindow(_ magnitude: Double) {
+        recentAccelerations.append(magnitude)
+        if recentAccelerations.count > peakWindowSize {
+            recentAccelerations.removeFirst()
         }
     }
 
     private func isPeak(_ value: Double) -> Bool {
         guard recentAccelerations.count >= 3 else { return false }
         let lastIndex = recentAccelerations.count - 1
+
+        // Värdet är en peak om det är större eller lika med de två föregående
         return value >= recentAccelerations[lastIndex - 1] &&
                value >= recentAccelerations[lastIndex - 2]
     }
 
-    /// Bestäm riktning baserat på rotation Z-axeln (handledsvridning)
-    /// Rotationsriktningen inverteras beroende på vilken handled klockan sitter på.
-    private func determineDirection(rotZ: Double) -> DetectedGesture.FlickDirection {
-        // "Bladvänd höger" (NEXT): hand roterar inåt
-        // "Bladvänd vänster" (PREV): hand roterar utåt
-        // På höger handled är rotationsriktningen inverterad jämfört med vänster
-        let effectiveRotZ = configuration.watchOnRightWrist ? -rotZ : rotZ
-        return effectiveRotZ < 0 ? .forward : .backward
+    private func resetState() {
+        gestureState = .idle
+        maxAccelerationInGesture = 0
+        recentAccelerations.removeAll()
+    }
+
+    private func log(_ message: String) {
+        print("[GestureDetector] \(message)")
     }
 }
