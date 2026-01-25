@@ -30,7 +30,7 @@ final class GestureDetector: ObservableObject {
     private enum Defaults {
         static let accelerationThreshold: Double = 1.5      // g - minimum acceleration
         static let rotationThreshold: Double = 30.0         // grader/sekund
-        static let gestureDebounceInterval: Double = 1.5    // sekunder
+        static let gestureDebounceInterval: Double = 1.0    // sekunder
         static let samplingRate: Double = 50.0              // Hz
         static let gestureTimeout: Double = 0.6             // sekunder - max tid för en gest
         static let gestureMinDuration: Double = 0.08        // sekunder - minimum tid för en gest (80ms)

@@ -8,6 +8,16 @@ final class KeyboardSimulator {
     private var lastCommandTime: Date = .distantPast
     private let debounceInterval: TimeInterval
 
+    /// App-specifika tangentmappningar
+    /// Key: bundle identifier, Value: [command: keyCode]
+    private let appSpecificKeys: [String: [PresentationCommand: UInt16]] = [
+        // Skim använder pil upp/ned för navigering
+        "net.sourceforge.skim-app.skim": [
+            .next: 125,      // ↓ (Down arrow)
+            .previous: 126   // ↑ (Up arrow)
+        ]
+    ]
+
     init(debounceInterval: TimeInterval = FlickSlidesConstants.macCommandCooldown) {
         self.debounceInterval = debounceInterval
     }
@@ -74,6 +84,18 @@ final class KeyboardSimulator {
                 print("[KeyboardSimulator] Could not activate target app, sending key anyway")
             }
         }
-        return sendKey(CGKeyCode(command.keyCode))
+
+        // Hämta app-specifik tangent eller använd standard
+        let keyCode: UInt16
+        if let bundleId = targetAppBundleId,
+           let appKeys = appSpecificKeys[bundleId],
+           let specificKey = appKeys[command] {
+            keyCode = specificKey
+            print("[KeyboardSimulator] Using app-specific key for \(bundleId): \(keyCode)")
+        } else {
+            keyCode = command.keyCode
+        }
+
+        return sendKey(CGKeyCode(keyCode))
     }
 }

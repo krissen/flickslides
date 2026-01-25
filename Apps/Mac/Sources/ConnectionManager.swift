@@ -30,7 +30,9 @@ final class ConnectionManager: NSObject, ObservableObject {
         "com.apple.Preview",
         "com.google.Chrome",
         "com.apple.Safari",
-        "org.mozilla.firefox"
+        "org.mozilla.firefox",
+        "com.adobe.Reader",              // Adobe Acrobat Reader
+        "net.sourceforge.skim-app.skim"  // Skim PDF viewer
     ]
 
     init(keyboardSimulator: KeyboardSimulator = KeyboardSimulator()) {

@@ -19,7 +19,7 @@ struct SettingsView: View {
     private enum Defaults {
         static let accelerationThreshold: Double = 1.5
         static let rotationThreshold: Double = 30.0
-        static let gestureDebounceInterval: Double = 1.5
+        static let gestureDebounceInterval: Double = 1.0
     }
 
     // MARK: - State
