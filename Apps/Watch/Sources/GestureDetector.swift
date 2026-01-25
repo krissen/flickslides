@@ -154,10 +154,32 @@ final class GestureDetector: ObservableObject {
     private var lastConfigReload: Date = .distantPast
     private let configReloadInterval: TimeInterval = 3.0  // Ladda om var 3:e sekund
 
+    // DTW-baserad gestmatchning
+    private let dtwMatcher = DTWMatcher()
+    private let templateStore = GestureTemplateStore()
+    private var dtwSamples: [DTWMatcher.MotionSample] = []
+    private var dtwGestureStartTime: Date?
+    private var useDTW: Bool { dtwMatcher.hasTemplates }
+    private let dtwConfidenceThreshold: Double = 0.6
+
     // MARK: - Initialization
 
     init() {
         self.configuration = Configuration.fromUserDefaults()
+        loadDTWTemplates()
+    }
+
+    private func loadDTWTemplates() {
+        let templates = templateStore.load()
+        if !templates.isEmpty {
+            dtwMatcher.loadTemplates(templates)
+            log("Loaded \(templates.count) DTW templates")
+        }
+    }
+
+    /// Laddar om DTW-mallar (anropas efter kalibrering)
+    func reloadDTWTemplates() {
+        loadDTWTemplates()
     }
 
     // MARK: - Public Methods
@@ -248,13 +270,73 @@ final class GestureDetector: ObservableObject {
             }
         }
 
+        // Samla DTW-samples om vi är i en aktiv gest
+        collectDTWSample(now: now, acc: acc, rot: rot, accMagnitude: accMagnitude)
+
         // State machine processing
         processStateMachine(
             now: now,
             acc: acc,
+            rot: rot,
             accMagnitude: accMagnitude,
             effectiveRotX: effectiveRotX
         )
+    }
+
+    // MARK: - DTW Sample Collection
+
+    private func collectDTWSample(now: Date, acc: CMAcceleration, rot: CMRotationRate, accMagnitude: Double) {
+        // Starta sampling när acceleration överstiger tröskel
+        if dtwGestureStartTime == nil && accMagnitude > 1.0 {
+            dtwGestureStartTime = now
+            dtwSamples.removeAll()
+        }
+
+        // Samla samples under aktiv gest
+        if let startTime = dtwGestureStartTime {
+            let sample = DTWMatcher.MotionSample(
+                timestamp: now.timeIntervalSince(startTime),
+                accX: acc.x,
+                accY: acc.y,
+                accZ: acc.z,
+                rotX: rot.x * 180.0 / .pi,
+                rotY: rot.y * 180.0 / .pi,
+                rotZ: rot.z * 180.0 / .pi
+            )
+            dtwSamples.append(sample)
+
+            // Avsluta sampling efter 600ms eller när acceleration sjunker
+            let elapsed = now.timeIntervalSince(startTime)
+            if elapsed > 0.6 || (elapsed > 0.1 && accMagnitude < 0.3) {
+                // Sampling klar, matchar i processStateMachine
+            }
+        }
+    }
+
+    private func tryDTWMatch() -> DetectedGesture? {
+        guard useDTW, dtwSamples.count >= 5 else { return nil }
+
+        let result = dtwMatcher.match(dtwSamples)
+
+        if let label = result.label, result.confidence >= dtwConfidenceThreshold {
+            log("DTW match: \(label) confidence=\(String(format: "%.2f", result.confidence)) distance=\(String(format: "%.2f", result.distance))")
+
+            switch label {
+            case .flickForward:
+                return .flick(direction: .forward)
+            case .flickBackward:
+                return .flick(direction: .backward)
+            case .negative:
+                return nil
+            }
+        }
+
+        return nil
+    }
+
+    private func resetDTWState() {
+        dtwGestureStartTime = nil
+        dtwSamples.removeAll()
     }
 
     // MARK: - State Machine
@@ -262,9 +344,31 @@ final class GestureDetector: ObservableObject {
     private func processStateMachine(
         now: Date,
         acc: CMAcceleration,
+        rot: CMRotationRate,
         accMagnitude: Double,
         effectiveRotX: Double
     ) {
+        // Försök DTW-matchning först om vi har mallar och sampling är klar
+        if useDTW, let startTime = dtwGestureStartTime {
+            let elapsed = now.timeIntervalSince(startTime)
+            let samplingComplete = elapsed > 0.6 || (elapsed > 0.1 && accMagnitude < 0.3)
+
+            if samplingComplete {
+                if let gesture = tryDTWMatch() {
+                    // DTW-match lyckades
+                    lastGestureTime = now
+                    lastDetectedGesture = gesture
+                    onGestureDetected?(gesture)
+                    log("DETECTED (DTW): \(gesture)")
+                    resetState()
+                    resetDTWState()
+                    return
+                }
+                // Ingen DTW-match, fortsätt med tröskelbaserad fallback
+                resetDTWState()
+            }
+        }
+
         switch gestureState {
         case .idle:
             handleIdleState(now: now, acc: acc, accMagnitude: accMagnitude, effectiveRotX: effectiveRotX)
@@ -486,6 +590,7 @@ final class GestureDetector: ObservableObject {
         gestureState = .idle
         maxAccelerationInGesture = 0
         recentAccelerations.removeAll()
+        resetDTWState()
     }
 
     private func log(_ message: String) {

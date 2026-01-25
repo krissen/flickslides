@@ -122,6 +122,9 @@ final class PresentationManager: NSObject, ObservableObject {
         // Ladda om konfiguration (hämta ev. nya inställningar från iPhone)
         gestureDetector.reloadConfiguration()
 
+        // Ladda om DTW-mallar (om kalibrering gjorts)
+        gestureDetector.reloadDTWTemplates()
+
         // Starta gestdetektering
         gestureDetector.start { [weak self] gesture in
             Task { @MainActor in

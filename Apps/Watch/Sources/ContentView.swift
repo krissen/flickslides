@@ -4,24 +4,35 @@ import WatchConnectivity
 
 struct ContentView: View {
     @StateObject private var presentationManager = PresentationManager.shared
+    @State private var showCalibration = false
 
     var body: some View {
-        VStack(spacing: 8) {
-            // Status
-            statusSection
+        NavigationStack {
+            VStack(spacing: 8) {
+                // Status
+                statusSection
 
-            Spacer()
+                Spacer()
 
-            // Huvudknapp
-            mainButton
+                // Huvudknapp
+                mainButton
 
-            Spacer()
+                Spacer()
 
-            // Fallback-knappar
-            fallbackButtons
+                // Fallback-knappar
+                fallbackButtons
+            }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 8)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink(destination: CalibrationView()) {
+                        Image(systemName: "gearshape")
+                            .font(.caption)
+                    }
+                }
+            }
         }
-        .padding(.horizontal, 4)
-        .padding(.vertical, 8)
     }
 
     // MARK: - Status Section
