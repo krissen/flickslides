@@ -23,13 +23,15 @@ targets:
       - path: Watch/Sources
     info:
       path: Watch/Info.plist
+      properties:
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: com.kristianniemi.FlickSlides
+        WKRunsIndependentlyOfCompanionApp: true
     entitlements:
       path: Watch/FlickSlidesWatch.entitlements
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kristianniemi.FlickSlides.watchkitapp
-        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.kristianniemi.FlickSlides
-        INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: true
         SWIFT_VERSION: "5.9"
     dependencies:
       - package: FlickSlidesKit
