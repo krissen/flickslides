@@ -13,6 +13,7 @@ final class PresentationManager: NSObject, ObservableObject {
     // MARK: - Published State
 
     @Published private(set) var isPresentationMode = false
+    @Published private(set) var isTransitioning = false  // Loading-state för start/stopp
     @Published private(set) var connectionState: String = "Ej ansluten"
     @Published private(set) var lastCommand: String?
 
@@ -102,7 +103,10 @@ final class PresentationManager: NSObject, ObservableObject {
     // MARK: - Presentation Control
 
     func startPresentation() async {
-        guard !isPresentationMode else { return }
+        guard !isPresentationMode && !isTransitioning else { return }
+
+        isTransitioning = true
+        WKInterfaceDevice.current().play(.click)  // Omedelbar feedback
 
         // Begär HealthKit-auktorisering
         await requestHealthKitAuthorization()
@@ -123,6 +127,7 @@ final class PresentationManager: NSObject, ObservableObject {
         }
 
         isPresentationMode = true
+        isTransitioning = false
 
         // Haptisk feedback
         WKInterfaceDevice.current().play(.start)
@@ -130,7 +135,10 @@ final class PresentationManager: NSObject, ObservableObject {
     }
 
     func stopPresentation() async {
-        guard isPresentationMode else { return }
+        guard isPresentationMode && !isTransitioning else { return }
+
+        isTransitioning = true
+        WKInterfaceDevice.current().play(.click)  // Omedelbar feedback
 
         gestureDetector.stop()
 
@@ -138,6 +146,7 @@ final class PresentationManager: NSObject, ObservableObject {
         await stopWorkoutSession()
 
         isPresentationMode = false
+        isTransitioning = false
 
         // Haptisk feedback
         WKInterfaceDevice.current().play(.stop)

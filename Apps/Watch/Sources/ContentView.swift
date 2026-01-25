@@ -4,7 +4,6 @@ import WatchConnectivity
 
 struct ContentView: View {
     @StateObject private var presentationManager = PresentationManager.shared
-    @State private var isLoading = false
 
     var body: some View {
         VStack(spacing: 8) {
@@ -50,21 +49,16 @@ struct ContentView: View {
 
     private var mainButton: some View {
         Button {
-            guard !isLoading else { return }
-            isLoading = true
-            WKInterfaceDevice.current().play(.click)
-
             Task {
                 if presentationManager.isPresentationMode {
                     await presentationManager.stopPresentation()
                 } else {
                     await presentationManager.startPresentation()
                 }
-                isLoading = false
             }
         } label: {
             VStack(spacing: 4) {
-                if isLoading {
+                if presentationManager.isTransitioning {
                     ProgressView()
                         .tint(.white)
                         .frame(height: 32)
@@ -88,18 +82,18 @@ struct ContentView: View {
             )
         }
         .buttonStyle(.plain)
-        .disabled(isLoading)
+        .disabled(presentationManager.isTransitioning)
     }
 
     private var buttonText: String {
-        if isLoading {
+        if presentationManager.isTransitioning {
             return presentationManager.isPresentationMode ? "Stoppar..." : "Startar..."
         }
         return presentationManager.isPresentationMode ? "Stoppa" : "Starta"
     }
 
     private var buttonTint: Color {
-        if isLoading {
+        if presentationManager.isTransitioning {
             return .orange
         }
         return presentationManager.isPresentationMode ? .red : .green
