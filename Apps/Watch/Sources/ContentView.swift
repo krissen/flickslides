@@ -4,6 +4,7 @@ import WatchConnectivity
 
 struct ContentView: View {
     @StateObject private var presentationManager = PresentationManager.shared
+    @State private var isLoading = false
 
     var body: some View {
         VStack(spacing: 8) {
@@ -49,20 +50,30 @@ struct ContentView: View {
 
     private var mainButton: some View {
         Button {
+            guard !isLoading else { return }
+            isLoading = true
+            WKInterfaceDevice.current().play(.click)
+
             Task {
                 if presentationManager.isPresentationMode {
                     await presentationManager.stopPresentation()
                 } else {
                     await presentationManager.startPresentation()
                 }
+                isLoading = false
             }
         } label: {
             VStack(spacing: 6) {
-                Image(systemName: presentationManager.isPresentationMode
-                    ? "stop.fill"
-                    : "play.fill")
-                    .font(.system(size: 36))
-                Text(presentationManager.isPresentationMode ? "Stoppa" : "Starta")
+                if isLoading {
+                    ProgressView()
+                        .frame(height: 36)
+                } else {
+                    Image(systemName: presentationManager.isPresentationMode
+                        ? "stop.fill"
+                        : "play.fill")
+                        .font(.system(size: 36))
+                }
+                Text(buttonText)
                     .font(.callout)
                     .fontWeight(.medium)
             }
@@ -70,7 +81,22 @@ struct ContentView: View {
             .padding(.vertical, 12)
         }
         .buttonStyle(.borderedProminent)
-        .tint(presentationManager.isPresentationMode ? .red : .green)
+        .tint(buttonTint)
+        .disabled(isLoading)
+    }
+
+    private var buttonText: String {
+        if isLoading {
+            return presentationManager.isPresentationMode ? "Stoppar..." : "Startar..."
+        }
+        return presentationManager.isPresentationMode ? "Stoppa" : "Starta"
+    }
+
+    private var buttonTint: Color {
+        if isLoading {
+            return .orange
+        }
+        return presentationManager.isPresentationMode ? .red : .green
     }
 
     // MARK: - Fallback Buttons
