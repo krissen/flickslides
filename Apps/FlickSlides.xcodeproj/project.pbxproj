@@ -8,6 +8,14 @@
 
 /* Begin PBXBuildFile section */
 		079870E2F573941DA0A0D471 /* FlickSlidesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 92BC6288264FBF83284EC95E /* FlickSlidesKit */; };
+		08A1B2C3D4E5F67890123456 /* DTWMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6789012345678 /* DTWMatcher.swift */; };
+		08B2C3D4E5F6789012345678 /* GestureTemplateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6789012345678A1 /* GestureTemplateStore.swift */; };
+		08C3D4E5F6789012345678A1 /* CalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F6789012345678A1B2 /* CalibrationView.swift */; };
+		08D4E5F6789012345678A1B2 /* CalibrationRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6789012345678A1B2C3 /* CalibrationRecorder.swift */; };
+		08E5F6789012345678A1B2C3 /* WatchCalibrationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F6789012345678A1B2C3D4 /* WatchCalibrationCoordinator.swift */; };
+		08F6789012345678A1B2C3D4 /* WatchCalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6789012345678A1B2C3D4E5 /* WatchCalibrationView.swift */; };
+		09A4E33E7D9BF67836E273D1 /* PhoneCalibrationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 746DEAB501F90F257B00FB70 /* PhoneCalibrationManager.swift */; };
+		09A5E33E7D9BF67836E273D3 /* PhoneCalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 746DEAB501F90F257B00FB72 /* PhoneCalibrationView.swift */; };
 		09B4E33E7D9BF67836E273D2 /* WatchSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 646DEAB501F90F257B00FB71 /* WatchSessionManager.swift */; };
 		0CE9A57A1ABB06CBF3E20865 /* FlickSlidesPhoneApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD381C7F07DEA182D0EA5F4E /* FlickSlidesPhoneApp.swift */; };
 		176550A655CEFEC4339D1E4D /* FlickSlidesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3E1CA812A95A07DD4BE49ECF /* FlickSlidesKit */; };
@@ -56,6 +64,14 @@
 
 /* Begin PBXFileReference section */
 		06A27CEB1E25339638FFCB4C /* FlickSlidesMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlickSlidesMacApp.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6789012345678 /* DTWMatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DTWMatcher.swift; sourceTree = "<group>"; };
+		B2C3D4E5F6789012345678A1 /* GestureTemplateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GestureTemplateStore.swift; sourceTree = "<group>"; };
+		C3D4E5F6789012345678A1B2 /* CalibrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrationView.swift; sourceTree = "<group>"; };
+		D4E5F6789012345678A1B2C3 /* CalibrationRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrationRecorder.swift; sourceTree = "<group>"; };
+		E5F6789012345678A1B2C3D4 /* WatchCalibrationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchCalibrationCoordinator.swift; sourceTree = "<group>"; };
+		F6789012345678A1B2C3D4E5 /* WatchCalibrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchCalibrationView.swift; sourceTree = "<group>"; };
+		746DEAB501F90F257B00FB70 /* PhoneCalibrationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Calibration/PhoneCalibrationManager.swift"; sourceTree = "<group>"; };
+		746DEAB501F90F257B00FB72 /* PhoneCalibrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Calibration/PhoneCalibrationView.swift"; sourceTree = "<group>"; };
 		0C337354533D2F2D8642D449 /* FlickSlidesWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlickSlidesWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		442859D4B621E4CF2421F893 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		445FB66AC6E7CABC19AF8CF5 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
@@ -149,6 +165,8 @@
 				803EE9410B0EFB5A8480B8B7 /* ContentView.swift */,
 				CD381C7F07DEA182D0EA5F4E /* FlickSlidesPhoneApp.swift */,
 				90F3AFE3FE3E0C9A22D8D17D /* MacConnectionManager.swift */,
+				746DEAB501F90F257B00FB70 /* PhoneCalibrationManager.swift */,
+				746DEAB501F90F257B00FB72 /* PhoneCalibrationView.swift */,
 				442859D4B621E4CF2421F893 /* SettingsView.swift */,
 				646DEAB501F90F257B00FB71 /* WatchSessionManager.swift */,
 			);
@@ -167,10 +185,16 @@
 		CC5F78DDDE6ECF4FBDA87293 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				D4E5F6789012345678A1B2C3 /* CalibrationRecorder.swift */,
+				C3D4E5F6789012345678A1B2 /* CalibrationView.swift */,
 				CED1D49F1AE41C6A695548F5 /* ContentView.swift */,
+				A1B2C3D4E5F6789012345678 /* DTWMatcher.swift */,
 				64E7D8BA39702E9B404617B0 /* FlickSlidesWatchApp.swift */,
 				7AEC07078FE530BCA417D9D5 /* GestureDetector.swift */,
+				B2C3D4E5F6789012345678A1 /* GestureTemplateStore.swift */,
 				F913E581E4EF6F14B483AA4F /* PresentationManager.swift */,
+				E5F6789012345678A1B2C3D4 /* WatchCalibrationCoordinator.swift */,
+				F6789012345678A1B2C3D4E5 /* WatchCalibrationView.swift */,
 			);
 			name = Sources;
 			path = Watch/Sources;
@@ -294,6 +318,8 @@
 				3199B1790A6925F2A9093CC7 /* ContentView.swift in Sources */,
 				0CE9A57A1ABB06CBF3E20865 /* FlickSlidesPhoneApp.swift in Sources */,
 				E4011ECD6C983726C01D3DD4 /* MacConnectionManager.swift in Sources */,
+				09A4E33E7D9BF67836E273D1 /* PhoneCalibrationManager.swift in Sources */,
+				09A5E33E7D9BF67836E273D3 /* PhoneCalibrationView.swift in Sources */,
 				830E8755C37FF94069C2B0D0 /* SettingsView.swift in Sources */,
 				09B4E33E7D9BF67836E273D2 /* WatchSessionManager.swift in Sources */,
 			);
@@ -317,10 +343,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				08D4E5F6789012345678A1B2 /* CalibrationRecorder.swift in Sources */,
+				08C3D4E5F6789012345678A1 /* CalibrationView.swift in Sources */,
 				79455FE9AFA990232EC0D024 /* ContentView.swift in Sources */,
+				08A1B2C3D4E5F67890123456 /* DTWMatcher.swift in Sources */,
 				DE5AFD713CAE63528B581395 /* FlickSlidesWatchApp.swift in Sources */,
 				3FAED3C460418FC2E9A54A19 /* GestureDetector.swift in Sources */,
+				08B2C3D4E5F6789012345678 /* GestureTemplateStore.swift in Sources */,
 				6226BF90A1A2FEC6EF8D194F /* PresentationManager.swift in Sources */,
+				08E5F6789012345678A1B2C3 /* WatchCalibrationCoordinator.swift in Sources */,
+				08F6789012345678A1B2C3D4 /* WatchCalibrationView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
