@@ -104,6 +104,11 @@ struct ContentView: View {
             }
             .navigationTitle("FlickSlides")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    NavigationLink(destination: SettingsView()) {
+                        Image(systemName: "gearshape")
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: toggleConnection) {
                         Image(systemName: macConnection.connectedMac != nil ? "wifi.slash" : "wifi")
