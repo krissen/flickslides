@@ -30,6 +30,10 @@ targets:
         WKRunsIndependentlyOfCompanionApp: true
     entitlements:
       path: Watch/FlickSlidesWatch.entitlements
+    capabilities:
+      - HealthKit:
+          capabilities:
+            - background-delivery
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kristianniemi.FlickSlides.watchkitapp

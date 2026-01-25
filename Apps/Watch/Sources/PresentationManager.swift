@@ -1,9 +1,10 @@
 import Foundation
+import HealthKit
 import WatchConnectivity
 import WatchKit
 
 /// Hanterar presentationsläge och WCSession-kommunikation.
-/// HealthKit/HKWorkoutSession är tillfälligt inaktiverat för enklare testning.
+/// Använder HKWorkoutSession för att hålla sensorer aktiva i bakgrunden.
 @MainActor
 final class PresentationManager: NSObject, ObservableObject {
 
@@ -19,10 +20,11 @@ final class PresentationManager: NSObject, ObservableObject {
 
     private let gestureDetector = GestureDetector()
 
-    // TODO: Lägg till HKWorkoutSession när signering är löst
-    // private let healthStore = HKHealthStore()
-    // private var workoutSession: HKWorkoutSession?
-    // private var workoutBuilder: HKLiveWorkoutBuilder?
+    // MARK: - HealthKit
+
+    private let healthStore = HKHealthStore()
+    private var workoutSession: HKWorkoutSession?
+    private var workoutBuilder: HKLiveWorkoutBuilder?
 
     // MARK: - Initialization
 
@@ -42,14 +44,62 @@ final class PresentationManager: NSObject, ObservableObject {
         WCSession.default.activate()
     }
 
+    // MARK: - Workout Session (för bakgrundsaktivitet)
+
+    private func startWorkoutSession() async throws {
+        let configuration = HKWorkoutConfiguration()
+        configuration.activityType = .other
+        configuration.locationType = .indoor
+
+        let session = try HKWorkoutSession(healthStore: healthStore, configuration: configuration)
+        let builder = session.associatedWorkoutBuilder()
+
+        builder.dataSource = HKLiveWorkoutDataSource(
+            healthStore: healthStore,
+            workoutConfiguration: configuration
+        )
+
+        session.delegate = self
+        builder.delegate = self
+
+        self.workoutSession = session
+        self.workoutBuilder = builder
+
+        session.startActivity(with: Date())
+        try await builder.beginCollection(at: Date())
+
+        print("[PresentationManager] Workout session started (background sensors enabled)")
+    }
+
+    private func stopWorkoutSession() async {
+        guard let session = workoutSession, let builder = workoutBuilder else { return }
+
+        session.end()
+
+        do {
+            try await builder.endCollection(at: Date())
+            try await builder.finishWorkout()
+            print("[PresentationManager] Workout session ended")
+        } catch {
+            print("[PresentationManager] Failed to end workout: \(error)")
+        }
+
+        self.workoutSession = nil
+        self.workoutBuilder = nil
+    }
+
     // MARK: - Presentation Control
 
     func startPresentation() async {
         guard !isPresentationMode else { return }
 
-        // TODO: Starta workout session för bakgrundsaktivitet
-        // Tillfälligt inaktiverat - sensorer fungerar bara i förgrunden
-        print("[PresentationManager] Note: Background sensors disabled (no HealthKit)")
+        // Starta workout session för bakgrundsaktivitet
+        do {
+            try await startWorkoutSession()
+        } catch {
+            print("[PresentationManager] Failed to start workout session: \(error)")
+            print("[PresentationManager] Continuing without background support")
+        }
 
         // Starta gestdetektering
         gestureDetector.start { [weak self] gesture in
@@ -69,6 +119,9 @@ final class PresentationManager: NSObject, ObservableObject {
         guard isPresentationMode else { return }
 
         gestureDetector.stop()
+
+        // Stoppa workout session
+        await stopWorkoutSession()
 
         isPresentationMode = false
 
@@ -154,5 +207,42 @@ extension PresentationManager: WCSessionDelegate {
             connectionState = session.isReachable ? "Ansluten" : "Frånkopplad"
             print("[PresentationManager] Reachability changed: \(connectionState)")
         }
+    }
+}
+
+// MARK: - HKWorkoutSessionDelegate
+
+extension PresentationManager: HKWorkoutSessionDelegate {
+
+    nonisolated func workoutSession(
+        _ workoutSession: HKWorkoutSession,
+        didChangeTo toState: HKWorkoutSessionState,
+        from fromState: HKWorkoutSessionState,
+        date: Date
+    ) {
+        print("[PresentationManager] Workout state: \(fromState.rawValue) -> \(toState.rawValue)")
+    }
+
+    nonisolated func workoutSession(
+        _ workoutSession: HKWorkoutSession,
+        didFailWithError error: Error
+    ) {
+        print("[PresentationManager] Workout session failed: \(error)")
+    }
+}
+
+// MARK: - HKLiveWorkoutBuilderDelegate
+
+extension PresentationManager: HKLiveWorkoutBuilderDelegate {
+
+    nonisolated func workoutBuilder(
+        _ workoutBuilder: HKLiveWorkoutBuilder,
+        didCollectDataOf collectedTypes: Set<HKSampleType>
+    ) {
+        // Vi samlar inte aktivt data, men delegaten krävs
+    }
+
+    nonisolated func workoutBuilderDidCollectEvent(_ workoutBuilder: HKLiveWorkoutBuilder) {
+        // Vi samlar inte aktivt events, men delegaten krävs
     }
 }

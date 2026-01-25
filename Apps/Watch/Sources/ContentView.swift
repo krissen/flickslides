@@ -6,44 +6,48 @@ struct ContentView: View {
     @StateObject private var presentationManager = PresentationManager.shared
 
     var body: some View {
-        VStack(spacing: 12) {
-            // Status
-            statusSection
+        NavigationStack {
+            VStack(spacing: 16) {
+                // Status
+                statusSection
 
-            Spacer()
+                Spacer()
 
-            // Huvudknapp
-            mainButton
+                // Huvudknapp
+                mainButton
 
-            Spacer()
+                Spacer()
 
-            // Fallback-knappar
-            fallbackButtons
+                // Fallback-knappar
+                fallbackButtons
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 12)
+            .navigationTitle("FlickSlides")
+            .navigationBarTitleDisplayMode(.inline)
         }
-        .padding(.horizontal)
-        .padding(.vertical, 8)
     }
 
     // MARK: - Status Section
 
     private var statusSection: some View {
-        VStack(spacing: 2) {
-            Text("FlickSlides")
-                .font(.headline)
-
-            HStack(spacing: 4) {
+        VStack(spacing: 4) {
+            HStack(spacing: 6) {
                 Circle()
                     .fill(presentationManager.isPresentationMode ? .green : .gray)
-                    .frame(width: 6, height: 6)
+                    .frame(width: 8, height: 8)
                 Text(presentationManager.isPresentationMode ? "Aktivt" : "Inaktivt")
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             Text(presentationManager.connectionState)
-                .font(.system(size: 10))
+                .font(.system(size: 11))
                 .foregroundStyle(.tertiary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
+        .padding(.top, 4)
     }
 
     // MARK: - Main Button
@@ -58,16 +62,17 @@ struct ContentView: View {
                 }
             }
         } label: {
-            VStack(spacing: 4) {
+            VStack(spacing: 6) {
                 Image(systemName: presentationManager.isPresentationMode
                     ? "stop.fill"
                     : "play.fill")
-                    .font(.system(size: 32))
+                    .font(.system(size: 36))
                 Text(presentationManager.isPresentationMode ? "Stoppa" : "Starta")
-                    .font(.caption)
+                    .font(.callout)
+                    .fontWeight(.medium)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
+            .padding(.vertical, 12)
         }
         .buttonStyle(.borderedProminent)
         .tint(presentationManager.isPresentationMode ? .red : .green)
@@ -76,13 +81,14 @@ struct ContentView: View {
     // MARK: - Fallback Buttons
 
     private var fallbackButtons: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 20) {
             Button {
                 sendFallbackCommand("PREV")
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.title3)
-                    .frame(width: 44, height: 36)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .frame(width: 50, height: 44)
             }
             .buttonStyle(.bordered)
             .disabled(!presentationManager.isPresentationMode)
@@ -92,13 +98,15 @@ struct ContentView: View {
                 sendFallbackCommand("NEXT")
             } label: {
                 Image(systemName: "chevron.right")
-                    .font(.title3)
-                    .frame(width: 44, height: 36)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .frame(width: 50, height: 44)
             }
             .buttonStyle(.bordered)
             .disabled(!presentationManager.isPresentationMode)
             .opacity(presentationManager.isPresentationMode ? 1.0 : 0.4)
         }
+        .padding(.bottom, 4)
     }
 
     private func sendFallbackCommand(_ command: String) {
