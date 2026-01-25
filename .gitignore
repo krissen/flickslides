@@ -1,0 +1,45 @@
+# Xcode
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+.build/
+DerivedData/
+
+# Swift Package Manager
+.swiftpm/
+Packages/
+Package.resolved
+
+# macOS
+.DS_Store
+*.dSYM
+*.dSYM.zip
+
+# Build artifacts
+build/
+*.ipa
+*.app
+*.framework
+
+# CocoaPods (om vi använder det)
+Pods/
+
+# Carthage (om vi använder det)
+Carthage/Build/
+
+# Archives
+*.xcarchive
+
+# Credentials and secrets
+*.pem
+*.p12
+*.mobileprovision
+
+# Logs
+*.log
+
+# IDE
+*.swp
+*~
+.idea/
+.vscode/
