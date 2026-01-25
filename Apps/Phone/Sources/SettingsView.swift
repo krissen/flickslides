@@ -57,14 +57,17 @@ struct SettingsView: View {
         Form {
             Section {
                 Picker("Klockan sitter på", selection: $watchOnRightWrist) {
-                    Text("Vänster handled").tag(false)
-                    Text("Höger handled").tag(true)
+                    Text("Vänster").tag(false)
+                    Text("Höger").tag(true)
                 }
+                .pickerStyle(.segmented)
                 .onChange(of: watchOnRightWrist) { _, newValue in
                     defaults.set(newValue, forKey: Keys.watchOnRightWrist)
                 }
             } header: {
                 Text("Handled")
+            } footer: {
+                Text("Ändringen aktiveras automatiskt inom några sekunder.")
             }
 
             Section {

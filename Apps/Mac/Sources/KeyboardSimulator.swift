@@ -1,3 +1,4 @@
+import AppKit
 import CoreGraphics
 import Foundation
 import FlickSlidesKit
@@ -9,6 +10,28 @@ final class KeyboardSimulator {
 
     init(debounceInterval: TimeInterval = FlickSlidesConstants.macCommandCooldown) {
         self.debounceInterval = debounceInterval
+    }
+
+    /// Aktivera en app baserat på bundle identifier.
+    /// - Parameter bundleId: Bundle identifier för appen (t.ex. "com.apple.iWork.Keynote")
+    /// - Returns: `true` om appen aktiverades, `false` annars.
+    @discardableResult
+    func activateApp(bundleId: String) -> Bool {
+        let runningApps = NSWorkspace.shared.runningApplications
+        guard let app = runningApps.first(where: { $0.bundleIdentifier == bundleId }) else {
+            print("[KeyboardSimulator] App not found: \(bundleId)")
+            return false
+        }
+
+        let success = app.activate()
+        if success {
+            print("[KeyboardSimulator] Activated app: \(app.localizedName ?? bundleId)")
+            // Ge appen tid att komma till förgrunden
+            Thread.sleep(forTimeInterval: 0.1)
+        } else {
+            print("[KeyboardSimulator] Failed to activate app: \(bundleId)")
+        }
+        return success
     }
 
     /// Skicka en tangent.
@@ -40,7 +63,17 @@ final class KeyboardSimulator {
     }
 
     /// Hantera ett PresentationCommand.
-    func handleCommand(_ command: PresentationCommand) -> Bool {
+    /// - Parameters:
+    ///   - command: Kommandot att utföra
+    ///   - targetAppBundleId: Optional bundle ID för målappen. Om angiven aktiveras appen först.
+    /// - Returns: `true` om kommandot utfördes.
+    func handleCommand(_ command: PresentationCommand, targetAppBundleId: String? = nil) -> Bool {
+        // Om målapp är angiven, aktivera den först
+        if let bundleId = targetAppBundleId {
+            if !activateApp(bundleId: bundleId) {
+                print("[KeyboardSimulator] Could not activate target app, sending key anyway")
+            }
+        }
         return sendKey(CGKeyCode(command.keyCode))
     }
 }

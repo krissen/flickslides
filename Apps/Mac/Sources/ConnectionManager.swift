@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import MultipeerConnectivity
 import Combine
@@ -16,7 +17,21 @@ final class ConnectionManager: NSObject, ObservableObject {
     @Published private(set) var lastCommand: String?
     @Published private(set) var lastCommandSource: String?  // "watch" eller "phone"
 
+    /// Vald app som mål för kommandon (bundle identifier)
+    @Published var selectedAppBundleId: String?
+
     private var authorizedPeerID: MCPeerID?
+    private var appListTimer: Timer?
+
+    /// Bundle identifiers för appar som stöds för presentation
+    private let presentationAppBundleIds: Set<String> = [
+        "com.apple.iWork.Keynote",
+        "com.microsoft.PowerPoint",
+        "com.apple.Preview",
+        "com.google.Chrome",
+        "com.apple.Safari",
+        "org.mozilla.firefox"
+    ]
 
     init(keyboardSimulator: KeyboardSimulator = KeyboardSimulator()) {
         self.keyboardSimulator = keyboardSimulator
@@ -42,6 +57,59 @@ final class ConnectionManager: NSObject, ObservableObject {
 
     func stopAdvertising() {
         advertiser.stopAdvertisingPeer()
+        stopAppListTimer()
+    }
+
+    // MARK: - App List
+
+    /// Hämta körande presentationsappar
+    func getRunningPresentationApps() -> [AppInfo] {
+        let runningApps = NSWorkspace.shared.runningApplications
+        let frontmostApp = NSWorkspace.shared.frontmostApplication
+
+        return runningApps.compactMap { app -> AppInfo? in
+            guard let bundleId = app.bundleIdentifier,
+                  presentationAppBundleIds.contains(bundleId),
+                  let name = app.localizedName else {
+                return nil
+            }
+            let isActive = app.bundleIdentifier == frontmostApp?.bundleIdentifier
+            return AppInfo(id: bundleId, name: name, isActive: isActive)
+        }
+        .sorted { $0.name < $1.name }
+    }
+
+    /// Skicka app-lista till ansluten peer
+    func sendAppList() {
+        guard let peer = authorizedPeerID else { return }
+
+        let apps = getRunningPresentationApps()
+        let message = AppMessage.appList(apps)
+
+        do {
+            let data = try JSONEncoder().encode(message)
+            try session.send(data, toPeers: [peer], with: .reliable)
+            print("[ConnectionManager] Sent app list: \(apps.map { $0.name })")
+        } catch {
+            print("[ConnectionManager] Failed to send app list: \(error)")
+        }
+    }
+
+    private func startAppListTimer() {
+        stopAppListTimer()
+
+        // Skicka app-lista direkt vid anslutning
+        sendAppList()
+
+        // Sedan var 5:e sekund
+        appListTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            self?.sendAppList()
+        }
+    }
+
+    private func stopAppListTimer() {
+        appListTimer?.invalidate()
+        appListTimer = nil
     }
 }
 
@@ -55,6 +123,7 @@ extension ConnectionManager: MCSessionDelegate {
                 self.authorizedPeerID = peerID
                 self.connectionState = .connected(deviceName: peerID.displayName)
                 self.connectedPeerName = peerID.displayName
+                self.startAppListTimer()
                 print("[ConnectionManager] Connected to: \(peerID.displayName)")
 
             case .notConnected:
@@ -62,6 +131,8 @@ extension ConnectionManager: MCSessionDelegate {
                     self.authorizedPeerID = nil
                     self.connectionState = .disconnected
                     self.connectedPeerName = nil
+                    self.selectedAppBundleId = nil
+                    self.stopAppListTimer()
                 }
                 print("[ConnectionManager] Disconnected from: \(peerID.displayName)")
 
@@ -81,35 +152,67 @@ extension ConnectionManager: MCSessionDelegate {
             return
         }
 
-        // Försök parsa som JSON först (nytt format)
+        // Försök parsa som AppMessage först (nyaste format)
+        if let message = try? JSONDecoder().decode(AppMessage.self, from: data) {
+            handleAppMessage(message, from: peerID)
+            return
+        }
+
+        // Försök parsa som JSON dictionary (äldre format)
         var commandString: String
         var source: String = "phone"
+        var targetApp: String? = nil
 
         if let payload = try? JSONDecoder().decode([String: String].self, from: data),
            let cmd = payload["command"] {
             commandString = cmd
             source = payload["source"] ?? "phone"
+            targetApp = payload["targetApp"]
         } else if let plainCommand = String(data: data, encoding: .utf8) {
-            // Fallback för gammalt format
+            // Fallback för äldsta format (ren text)
             commandString = plainCommand
         } else {
             print("[ConnectionManager] Invalid command data")
             return
         }
 
+        processCommand(commandString, source: source, targetApp: targetApp, from: peerID)
+    }
+
+    private func handleAppMessage(_ message: AppMessage, from peerID: MCPeerID) {
+        switch message {
+        case .selectApp(let bundleId):
+            DispatchQueue.main.async {
+                self.selectedAppBundleId = bundleId
+                print("[ConnectionManager] Selected target app: \(bundleId)")
+            }
+
+        case .command(let cmd, let source, let targetApp):
+            processCommand(cmd, source: source, targetApp: targetApp, from: peerID)
+
+        case .appList:
+            // Mac skickar appList, tar inte emot
+            print("[ConnectionManager] Received unexpected appList message")
+        }
+    }
+
+    private func processCommand(_ commandString: String, source: String, targetApp: String?, from peerID: MCPeerID) {
         guard let command = PresentationCommand(rawValue: commandString) else {
             print("[ConnectionManager] Unknown command: \(commandString)")
             return
         }
 
-        print("[ConnectionManager] Received: \(command.rawValue) from \(source)")
+        // Använd explicit targetApp, annars fall tillbaka på selectedAppBundleId
+        let effectiveTargetApp = targetApp ?? selectedAppBundleId
+
+        print("[ConnectionManager] Received: \(command.rawValue) from \(source), target: \(effectiveTargetApp ?? "any")")
 
         DispatchQueue.main.async {
             self.lastCommand = command.rawValue
             self.lastCommandSource = source
         }
 
-        let success = keyboardSimulator.handleCommand(command)
+        let success = keyboardSimulator.handleCommand(command, targetAppBundleId: effectiveTargetApp)
 
         // Skicka ACK tillbaka
         let ack = CommandAck(command: command, success: success)

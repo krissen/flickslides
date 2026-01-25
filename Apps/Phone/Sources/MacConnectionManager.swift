@@ -15,6 +15,12 @@ final class MacConnectionManager: NSObject, ObservableObject {
     @Published var availableMacs: [MCPeerID] = []
     @Published var connectionState: ConnectionState = .disconnected
 
+    /// Tillgängliga presentationsappar på Mac
+    @Published var availableApps: [AppInfo] = []
+
+    /// Vald app för kommandon
+    @Published var selectedApp: AppInfo?
+
     private override init() {
         super.init()
 
@@ -48,22 +54,42 @@ final class MacConnectionManager: NSObject, ObservableObject {
         session.disconnect()
         connectedMac = nil
         connectionState = .disconnected
+        availableApps = []
+        selectedApp = nil
         print("[MacConnection] Disconnected")
+    }
+
+    /// Välj målapp för kommandon
+    func selectApp(_ app: AppInfo) {
+        guard let mac = connectedMac else { return }
+
+        selectedApp = app
+        let message = AppMessage.selectApp(app.id)
+
+        do {
+            let data = try JSONEncoder().encode(message)
+            try session.send(data, toPeers: [mac], with: .reliable)
+            print("[MacConnection] Selected app: \(app.name)")
+        } catch {
+            print("[MacConnection] Failed to select app: \(error)")
+        }
+    }
+
+    /// Avmarkera vald app
+    func clearSelectedApp() {
+        selectedApp = nil
     }
 
     func sendCommand(_ command: String, source: BridgeCoordinator.CommandSource = .phone) {
         guard let mac = connectedMac else { return }
 
-        let payload: [String: String] = [
-            "command": command,
-            "source": source.rawValue
-        ]
-
-        guard let data = try? JSONEncoder().encode(payload) else { return }
+        // Använd AppMessage.command för att inkludera målapp
+        let message = AppMessage.command(command, source: source.rawValue, targetApp: selectedApp?.id)
 
         do {
+            let data = try JSONEncoder().encode(message)
             try session.send(data, toPeers: [mac], with: .reliable)
-            print("[MacConnection] Sent: \(command) (from \(source.rawValue))")
+            print("[MacConnection] Sent: \(command) (from \(source.rawValue), target: \(selectedApp?.name ?? "any"))")
         } catch {
             print("[MacConnection] Failed to send: \(error)")
         }
@@ -103,9 +129,41 @@ extension MacConnectionManager: MCSessionDelegate {
     }
 
     func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
-        // Ta emot ACK från Mac
+        // Försök parsa som AppMessage
+        if let message = try? JSONDecoder().decode(AppMessage.self, from: data) {
+            handleAppMessage(message)
+            return
+        }
+
+        // Ta emot ACK från Mac (legacy)
         if let ack = String(data: data, encoding: .utf8) {
             print("[MacConnection] ACK from Mac: \(ack)")
+        }
+    }
+
+    private func handleAppMessage(_ message: AppMessage) {
+        switch message {
+        case .appList(let apps):
+            DispatchQueue.main.async {
+                self.availableApps = apps
+                print("[MacConnection] Received app list: \(apps.map { $0.name })")
+
+                // Om vald app inte längre finns i listan, rensa valet
+                if let selected = self.selectedApp,
+                   !apps.contains(where: { $0.id == selected.id }) {
+                    self.selectedApp = nil
+                    print("[MacConnection] Selected app no longer available, cleared selection")
+                }
+
+                // Auto-välj om endast en app finns och ingen är vald
+                if self.selectedApp == nil && apps.count == 1 {
+                    self.selectApp(apps[0])
+                }
+            }
+
+        case .selectApp, .command:
+            // iPhone skickar dessa, tar inte emot
+            print("[MacConnection] Received unexpected message type")
         }
     }
 

@@ -1,4 +1,5 @@
 import SwiftUI
+import FlickSlidesKit
 
 struct ContentView: View {
     @StateObject private var watchSession = WatchSessionManager.shared
@@ -46,6 +47,40 @@ struct ContentView: View {
                                         Image(systemName: "desktopcomputer")
                                         Text(mac.displayName)
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // App-val (visas endast när ansluten till Mac)
+                if macConnection.connectedMac != nil {
+                    Section("Målapp") {
+                        if macConnection.availableApps.isEmpty {
+                            HStack {
+                                Image(systemName: "app.dashed")
+                                    .foregroundColor(.secondary)
+                                Text("Ingen presentationsapp igång")
+                                    .foregroundColor(.secondary)
+                            }
+                        } else {
+                            Picker(selection: Binding(
+                                get: { macConnection.selectedApp?.id ?? "" },
+                                set: { newId in
+                                    if let app = macConnection.availableApps.first(where: { $0.id == newId }) {
+                                        macConnection.selectApp(app)
+                                    }
+                                }
+                            ), label: Label("App", systemImage: "app.fill")) {
+                                Text("Alla appar").tag("")
+                                ForEach(macConnection.availableApps) { app in
+                                    Label {
+                                        Text(app.name)
+                                    } icon: {
+                                        Image(systemName: app.isActive ? "circle.fill" : "circle")
+                                            .foregroundColor(app.isActive ? .green : .secondary)
+                                    }
+                                    .tag(app.id)
                                 }
                             }
                         }

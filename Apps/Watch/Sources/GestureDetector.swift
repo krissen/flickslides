@@ -150,6 +150,10 @@ final class GestureDetector: ObservableObject {
     private var maxAccelerationInGesture: Double = 0
     private let peakWindowSize = 10
 
+    // Auto-reload configuration
+    private var lastConfigReload: Date = .distantPast
+    private let configReloadInterval: TimeInterval = 3.0  // Ladda om var 3:e sekund
+
     // MARK: - Initialization
 
     init() {
@@ -197,6 +201,19 @@ final class GestureDetector: ObservableObject {
     // MARK: - Motion Processing
 
     private func processMotion(_ motion: CMDeviceMotion) {
+        let now = Date()
+
+        // Auto-reload konfiguration var 3:e sekund
+        if now.timeIntervalSince(lastConfigReload) > configReloadInterval {
+            let oldWrist = configuration.watchOnRightWrist
+            configuration = Configuration.fromUserDefaults()
+            lastConfigReload = now
+
+            if oldWrist != configuration.watchOnRightWrist {
+                log("Config auto-reloaded: wrist changed to \(configuration.watchOnRightWrist ? "right" : "left")")
+            }
+        }
+
         let acc = motion.userAcceleration
         let rot = motion.rotationRate
 
@@ -219,7 +236,6 @@ final class GestureDetector: ObservableObject {
         updateAccelerationWindow(accMagnitude)
 
         // Kolla debounce
-        let now = Date()
         guard now.timeIntervalSince(lastGestureTime) > configuration.debounceInterval else {
             return
         }
@@ -271,18 +287,27 @@ final class GestureDetector: ObservableObject {
         effectiveRotX: Double
     ) {
         // Krav för initiation:
-        // 1. X-acceleration dominerar över Y (sidledrörelse, inte arm-lyft)
-        // 2. Rotation påbörjad i någon riktning
+        // 1. X-acceleration dominerar (sidledrörelse, inte arm-lyft)
+        // 2. Rotation påbörjad i rätt axel
         // 3. Acceleration över minimum
 
         let absX = abs(acc.x)
         let absY = abs(acc.y)
-        let xDominates = absX > absY * 0.7  // X ska vara betydande
+        let absZ = abs(acc.z)
+
+        // X måste vara den dominanta axeln för en riktig bladvänd-gest
+        // Arm-lyft har ofta Y eller Z dominant
+        let xIsLargest = absX >= absY && absX >= absZ
+        let xIsSignificant = absX > 0.5  // Minst 0.5g i sidled
+
+        guard xIsLargest && xIsSignificant else {
+            return
+        }
 
         let rotationStarted = abs(effectiveRotX) > Defaults.initiationRotationThreshold
         let sufficientAcceleration = accMagnitude > configuration.accelerationThreshold * 0.5
 
-        guard xDominates && rotationStarted && sufficientAcceleration else {
+        guard rotationStarted && sufficientAcceleration else {
             return
         }
 
@@ -292,7 +317,7 @@ final class GestureDetector: ObservableObject {
         gestureState = .initiated(startTime: now, direction: direction)
         maxAccelerationInGesture = accMagnitude
 
-        log("State: idle → initiated(\(direction)) | rotX=\(String(format: "%.1f", effectiveRotX))°/s | acc=\(String(format: "%.2f", accMagnitude))g")
+        log("State: idle → initiated(\(direction)) | rotX=\(String(format: "%.1f", effectiveRotX))°/s | acc(x=\(String(format: "%.2f", acc.x)), y=\(String(format: "%.2f", acc.y)), z=\(String(format: "%.2f", acc.z)))")
     }
 
     private func handleInitiatedState(
