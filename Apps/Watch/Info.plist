@@ -18,6 +18,10 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>FlickSlides does not access your health data. A workout session is created solely to keep motion sensors active during presentations.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>FlickSlides saves a minimal workout session to enable background gesture detection. No actual workout data is collected.</string>
 	<key>WKApplication</key>
 	<true/>
 	<key>WKCompanionAppBundleIdentifier</key>
