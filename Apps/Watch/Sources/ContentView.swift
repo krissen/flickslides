@@ -63,25 +63,31 @@ struct ContentView: View {
                 isLoading = false
             }
         } label: {
-            VStack(spacing: 6) {
+            VStack(spacing: 4) {
                 if isLoading {
                     ProgressView()
-                        .frame(height: 36)
+                        .tint(.white)
+                        .frame(height: 32)
                 } else {
                     Image(systemName: presentationManager.isPresentationMode
                         ? "stop.fill"
                         : "play.fill")
-                        .font(.system(size: 36))
+                        .font(.system(size: 32))
+                        .foregroundColor(.white)
                 }
                 Text(buttonText)
-                    .font(.callout)
+                    .font(.footnote)
                     .fontWeight(.medium)
+                    .foregroundColor(.white)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(buttonTint)
+            )
         }
-        .buttonStyle(.borderedProminent)
-        .tint(buttonTint)
+        .buttonStyle(.plain)
         .disabled(isLoading)
     }
 
