@@ -46,6 +46,13 @@ targets:
       - path: Phone/Sources
     info:
       path: Phone/Info.plist
+      properties:
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        NSLocalNetworkUsageDescription: "FlickSlides behöver åtkomst till lokalt nätverk för att ansluta till Mac-appen och styra presentationer."
+        NSBonjourServices:
+          - "_flickslides-ctl._tcp"
     entitlements:
       path: Phone/FlickSlidesPhone.entitlements
     settings:
@@ -67,6 +74,10 @@ targets:
       - path: Mac/Sources
     info:
       path: Mac/Info.plist
+      properties:
+        NSLocalNetworkUsageDescription: "FlickSlides behöver åtkomst till lokalt nätverk för att ta emot kommandon från iPhone-appen."
+        NSBonjourServices:
+          - "_flickslides-ctl._tcp"
     entitlements:
       path: Mac/FlickSlidesMac.entitlements
     settings:
