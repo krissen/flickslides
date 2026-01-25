@@ -11,6 +11,7 @@ struct SettingsView: View {
         static let accelerationThreshold = "accelerationThreshold"
         static let rotationThreshold = "rotationThreshold"
         static let gestureDebounceInterval = "gestureDebounceInterval"
+        static let watchOnRightWrist = "watchOnRightWrist"
     }
 
     // MARK: - Default Values
@@ -26,6 +27,7 @@ struct SettingsView: View {
     @State private var accelerationThreshold: Double
     @State private var rotationThreshold: Double
     @State private var debounceInterval: Double
+    @State private var watchOnRightWrist: Bool
 
     private let defaults: UserDefaults
 
@@ -41,16 +43,30 @@ struct SettingsView: View {
             ?? Defaults.rotationThreshold
         let debounce = defaults.object(forKey: Keys.gestureDebounceInterval) as? Double
             ?? Defaults.gestureDebounceInterval
+        let rightWrist = defaults.object(forKey: Keys.watchOnRightWrist) as? Bool ?? true
 
         _accelerationThreshold = State(initialValue: accel)
         _rotationThreshold = State(initialValue: rot)
         _debounceInterval = State(initialValue: debounce)
+        _watchOnRightWrist = State(initialValue: rightWrist)
     }
 
     // MARK: - Body
 
     var body: some View {
         Form {
+            Section {
+                Picker("Klockan sitter på", selection: $watchOnRightWrist) {
+                    Text("Vänster handled").tag(false)
+                    Text("Höger handled").tag(true)
+                }
+                .onChange(of: watchOnRightWrist) { _, newValue in
+                    defaults.set(newValue, forKey: Keys.watchOnRightWrist)
+                }
+            } header: {
+                Text("Handled")
+            }
+
             Section {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {

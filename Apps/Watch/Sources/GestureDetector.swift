@@ -19,6 +19,7 @@ final class GestureDetector: ObservableObject {
         static let accelerationThreshold = "accelerationThreshold"
         static let rotationThreshold = "rotationThreshold"
         static let gestureDebounceInterval = "gestureDebounceInterval"
+        static let watchOnRightWrist = "watchOnRightWrist"
     }
 
     // MARK: - Published State
@@ -43,6 +44,9 @@ final class GestureDetector: ObservableObject {
         /// Sampling-frekvens (Hz)
         var samplingRate: Double
 
+        /// Klockan sitter på höger handled (påverkar rotationsriktning)
+        var watchOnRightWrist: Bool
+
         /// Skapar konfiguration med värden från UserDefaults (med app group för delning med iPhone)
         static func fromUserDefaults() -> Configuration {
             let defaults = UserDefaults(suiteName: "group.com.kristianniemi.FlickSlides") ?? .standard
@@ -53,12 +57,14 @@ final class GestureDetector: ObservableObject {
                 ?? Defaults.rotationThreshold
             let debounce = defaults.object(forKey: UserDefaultsKeys.gestureDebounceInterval) as? Double
                 ?? Defaults.gestureDebounceInterval
+            let rightWrist = defaults.object(forKey: UserDefaultsKeys.watchOnRightWrist) as? Bool ?? true
 
             return Configuration(
                 accelerationThreshold: accelThreshold,
                 rotationThreshold: rotThreshold,
                 debounceInterval: debounce,
-                samplingRate: Defaults.samplingRate
+                samplingRate: Defaults.samplingRate,
+                watchOnRightWrist: rightWrist
             )
         }
     }
@@ -198,12 +204,12 @@ final class GestureDetector: ObservableObject {
     }
 
     /// Bestäm riktning baserat på rotation Z-axeln (handledsvridning)
-    /// På vänster handled med klockan uppåt:
-    /// - Positiv rotZ = vrid handleden utåt (supination) = PREV (bakåt)
-    /// - Negativ rotZ = vrid handleden inåt (pronation) = NEXT (framåt)
+    /// Rotationsriktningen inverteras beroende på vilken handled klockan sitter på.
     private func determineDirection(rotZ: Double) -> DetectedGesture.FlickDirection {
-        // "Bladvänd höger" (NEXT): hand roterar inåt, klocka vänds nedåt
-        // "Bladvänd vänster" (PREV): hand roterar utåt, klocka vänds uppåt
-        return rotZ < 0 ? .forward : .backward
+        // "Bladvänd höger" (NEXT): hand roterar inåt
+        // "Bladvänd vänster" (PREV): hand roterar utåt
+        // På höger handled är rotationsriktningen inverterad jämfört med vänster
+        let effectiveRotZ = configuration.watchOnRightWrist ? -rotZ : rotZ
+        return effectiveRotZ < 0 ? .forward : .backward
     }
 }
