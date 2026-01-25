@@ -40,6 +40,7 @@ targets:
         SWIFT_VERSION: "5.9"
         DEVELOPMENT_TEAM: 7GYVML3XJG
         CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
     dependencies:
       - package: FlickSlidesKit
 
