@@ -1,0 +1,611 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		079870E2F573941DA0A0D471 /* FlickSlidesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 92BC6288264FBF83284EC95E /* FlickSlidesKit */; };
+		09B4E33E7D9BF67836E273D2 /* WatchSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 646DEAB501F90F257B00FB71 /* WatchSessionManager.swift */; };
+		0CE9A57A1ABB06CBF3E20865 /* FlickSlidesPhoneApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD381C7F07DEA182D0EA5F4E /* FlickSlidesPhoneApp.swift */; };
+		176550A655CEFEC4339D1E4D /* FlickSlidesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3E1CA812A95A07DD4BE49ECF /* FlickSlidesKit */; };
+		3199B1790A6925F2A9093CC7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 803EE9410B0EFB5A8480B8B7 /* ContentView.swift */; };
+		3FAED3C460418FC2E9A54A19 /* GestureDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AEC07078FE530BCA417D9D5 /* GestureDetector.swift */; };
+		4CB2F77ED6BCB58542DAF212 /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 445FB66AC6E7CABC19AF8CF5 /* StatusBarController.swift */; };
+		6226BF90A1A2FEC6EF8D194F /* PresentationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F913E581E4EF6F14B483AA4F /* PresentationManager.swift */; };
+		6C4A7374FB1A4E1640717EC1 /* KeyboardSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD90C1ADB4C77D204AE70074 /* KeyboardSimulator.swift */; };
+		6E38DFF0A7E9FAEA9EA09E62 /* FlickSlidesMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06A27CEB1E25339638FFCB4C /* FlickSlidesMacApp.swift */; };
+		79455FE9AFA990232EC0D024 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CED1D49F1AE41C6A695548F5 /* ContentView.swift */; };
+		889B70BFD4E8B738096997CC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4858FD1EABDB5BDC792D8DC8 /* AppDelegate.swift */; };
+		8C21AC87FBC7356268254A45 /* AccessibilityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B5FD7801F17DF1E6B10B216 /* AccessibilityManager.swift */; };
+		98470D0E73F799B0F6ECB395 /* FlickSlidesWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 0C337354533D2F2D8642D449 /* FlickSlidesWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A6218BD9170D7F2BFE76CADE /* BridgeCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9FE5D271E31BE87E3F37F5 /* BridgeCoordinator.swift */; };
+		D57244D7E7E2508394A723F9 /* FlickSlidesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 565A7CA81B259520A2C9BB1A /* FlickSlidesKit */; };
+		DE5AFD713CAE63528B581395 /* FlickSlidesWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E7D8BA39702E9B404617B0 /* FlickSlidesWatchApp.swift */; };
+		E4011ECD6C983726C01D3DD4 /* MacConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90F3AFE3FE3E0C9A22D8D17D /* MacConnectionManager.swift */; };
+		EB54B93D75634E60E4E59EC5 /* ConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B85A761E1CA671CEC38DAF5 /* ConnectionManager.swift */; };
+		EDD5115D61D86DAC3E396C0A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A81EA0B9874CE07E2ECD72D0 /* SettingsView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A6D65679AD94B8A6FF155408 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FDFBA065688EF666522C6B32 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 77A7AC4A871EB5A36A6FA3FC;
+			remoteInfo = FlickSlidesWatch;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		97F35CFDBA383BF998EA1D28 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				98470D0E73F799B0F6ECB395 /* FlickSlidesWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		06A27CEB1E25339638FFCB4C /* FlickSlidesMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlickSlidesMacApp.swift; sourceTree = "<group>"; };
+		0C337354533D2F2D8642D449 /* FlickSlidesWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlickSlidesWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		445FB66AC6E7CABC19AF8CF5 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
+		4858FD1EABDB5BDC792D8DC8 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		5E9FE5D271E31BE87E3F37F5 /* BridgeCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeCoordinator.swift; sourceTree = "<group>"; };
+		646DEAB501F90F257B00FB71 /* WatchSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSessionManager.swift; sourceTree = "<group>"; };
+		64E7D8BA39702E9B404617B0 /* FlickSlidesWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlickSlidesWatchApp.swift; sourceTree = "<group>"; };
+		7AEC07078FE530BCA417D9D5 /* GestureDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GestureDetector.swift; sourceTree = "<group>"; };
+		7FCE06DFEECAF4624FD45CA3 /* FlickSlidesPhone.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FlickSlidesPhone.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		803EE9410B0EFB5A8480B8B7 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		8B5FD7801F17DF1E6B10B216 /* AccessibilityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityManager.swift; sourceTree = "<group>"; };
+		8B85A761E1CA671CEC38DAF5 /* ConnectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionManager.swift; sourceTree = "<group>"; };
+		90F3AFE3FE3E0C9A22D8D17D /* MacConnectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacConnectionManager.swift; sourceTree = "<group>"; };
+		A81EA0B9874CE07E2ECD72D0 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		BDAD3B4F26E4CC9843F3F2B6 /* flickslides */ = {isa = PBXFileReference; lastKnownFileType = folder; name = flickslides; path = ..; sourceTree = SOURCE_ROOT; };
+		CD381C7F07DEA182D0EA5F4E /* FlickSlidesPhoneApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlickSlidesPhoneApp.swift; sourceTree = "<group>"; };
+		CD90C1ADB4C77D204AE70074 /* KeyboardSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardSimulator.swift; sourceTree = "<group>"; };
+		CED1D49F1AE41C6A695548F5 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		E7794E8BDF0BE202EE266632 /* FlickSlidesMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlickSlidesMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F913E581E4EF6F14B483AA4F /* PresentationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresentationManager.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		00E158BCB831637146063425 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				079870E2F573941DA0A0D471 /* FlickSlidesKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7D61A923B61395323CC2B354 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				176550A655CEFEC4339D1E4D /* FlickSlidesKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EA607EC414371BC71CB63A6E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D57244D7E7E2508394A723F9 /* FlickSlidesKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0E7283EBDF8C01E83ACDBFB0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E7794E8BDF0BE202EE266632 /* FlickSlidesMac.app */,
+				7FCE06DFEECAF4624FD45CA3 /* FlickSlidesPhone.app */,
+				0C337354533D2F2D8642D449 /* FlickSlidesWatch.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		892844CF45599024CD424BB9 = {
+			isa = PBXGroup;
+			children = (
+				C437C52515B62D7E12BF58FD /* Packages */,
+				B4B0B0242DBDD7B0CB7838C8 /* Sources */,
+				B55A0A2218A05B5039EB4B7E /* Sources */,
+				CC5F78DDDE6ECF4FBDA87293 /* Sources */,
+				0E7283EBDF8C01E83ACDBFB0 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		B4B0B0242DBDD7B0CB7838C8 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				8B5FD7801F17DF1E6B10B216 /* AccessibilityManager.swift */,
+				4858FD1EABDB5BDC792D8DC8 /* AppDelegate.swift */,
+				8B85A761E1CA671CEC38DAF5 /* ConnectionManager.swift */,
+				06A27CEB1E25339638FFCB4C /* FlickSlidesMacApp.swift */,
+				CD90C1ADB4C77D204AE70074 /* KeyboardSimulator.swift */,
+				A81EA0B9874CE07E2ECD72D0 /* SettingsView.swift */,
+				445FB66AC6E7CABC19AF8CF5 /* StatusBarController.swift */,
+			);
+			name = Sources;
+			path = Mac/Sources;
+			sourceTree = "<group>";
+		};
+		B55A0A2218A05B5039EB4B7E /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				5E9FE5D271E31BE87E3F37F5 /* BridgeCoordinator.swift */,
+				803EE9410B0EFB5A8480B8B7 /* ContentView.swift */,
+				CD381C7F07DEA182D0EA5F4E /* FlickSlidesPhoneApp.swift */,
+				90F3AFE3FE3E0C9A22D8D17D /* MacConnectionManager.swift */,
+				646DEAB501F90F257B00FB71 /* WatchSessionManager.swift */,
+			);
+			name = Sources;
+			path = Phone/Sources;
+			sourceTree = "<group>";
+		};
+		C437C52515B62D7E12BF58FD /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				BDAD3B4F26E4CC9843F3F2B6 /* flickslides */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		CC5F78DDDE6ECF4FBDA87293 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				CED1D49F1AE41C6A695548F5 /* ContentView.swift */,
+				64E7D8BA39702E9B404617B0 /* FlickSlidesWatchApp.swift */,
+				7AEC07078FE530BCA417D9D5 /* GestureDetector.swift */,
+				F913E581E4EF6F14B483AA4F /* PresentationManager.swift */,
+			);
+			name = Sources;
+			path = Watch/Sources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		69CE189A548DEE08153E0019 /* FlickSlidesMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EA9F6BFD44FC6E9720F88C52 /* Build configuration list for PBXNativeTarget "FlickSlidesMac" */;
+			buildPhases = (
+				80B9AD86D44A6BB012744364 /* Sources */,
+				00E158BCB831637146063425 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FlickSlidesMac;
+			packageProductDependencies = (
+				92BC6288264FBF83284EC95E /* FlickSlidesKit */,
+			);
+			productName = FlickSlidesMac;
+			productReference = E7794E8BDF0BE202EE266632 /* FlickSlidesMac.app */;
+			productType = "com.apple.product-type.application";
+		};
+		77A7AC4A871EB5A36A6FA3FC /* FlickSlidesWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0DC49FB96DD78E440AD220CD /* Build configuration list for PBXNativeTarget "FlickSlidesWatch" */;
+			buildPhases = (
+				D4CB78722556F7FC7D90A746 /* Sources */,
+				7D61A923B61395323CC2B354 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FlickSlidesWatch;
+			packageProductDependencies = (
+				3E1CA812A95A07DD4BE49ECF /* FlickSlidesKit */,
+			);
+			productName = FlickSlidesWatch;
+			productReference = 0C337354533D2F2D8642D449 /* FlickSlidesWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
+		90364508E1764FD58393EB14 /* FlickSlidesPhone */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 871E7A6E2B782D00967564E7 /* Build configuration list for PBXNativeTarget "FlickSlidesPhone" */;
+			buildPhases = (
+				607157E9C008D0763AF68E92 /* Sources */,
+				EA607EC414371BC71CB63A6E /* Frameworks */,
+				97F35CFDBA383BF998EA1D28 /* Embed Watch Content */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A96388B5B6273651A7CE42E6 /* PBXTargetDependency */,
+			);
+			name = FlickSlidesPhone;
+			packageProductDependencies = (
+				565A7CA81B259520A2C9BB1A /* FlickSlidesKit */,
+			);
+			productName = FlickSlidesPhone;
+			productReference = 7FCE06DFEECAF4624FD45CA3 /* FlickSlidesPhone.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		FDFBA065688EF666522C6B32 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+			};
+			buildConfigurationList = AA81D639D45A95C8CA8BF3CD /* Build configuration list for PBXProject "FlickSlides" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 892844CF45599024CD424BB9;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				2A3A11840CE453E6408BBCFC /* XCLocalSwiftPackageReference ".." */,
+			);
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				69CE189A548DEE08153E0019 /* FlickSlidesMac */,
+				90364508E1764FD58393EB14 /* FlickSlidesPhone */,
+				77A7AC4A871EB5A36A6FA3FC /* FlickSlidesWatch */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		607157E9C008D0763AF68E92 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A6218BD9170D7F2BFE76CADE /* BridgeCoordinator.swift in Sources */,
+				3199B1790A6925F2A9093CC7 /* ContentView.swift in Sources */,
+				0CE9A57A1ABB06CBF3E20865 /* FlickSlidesPhoneApp.swift in Sources */,
+				E4011ECD6C983726C01D3DD4 /* MacConnectionManager.swift in Sources */,
+				09B4E33E7D9BF67836E273D2 /* WatchSessionManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		80B9AD86D44A6BB012744364 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8C21AC87FBC7356268254A45 /* AccessibilityManager.swift in Sources */,
+				889B70BFD4E8B738096997CC /* AppDelegate.swift in Sources */,
+				EB54B93D75634E60E4E59EC5 /* ConnectionManager.swift in Sources */,
+				6E38DFF0A7E9FAEA9EA09E62 /* FlickSlidesMacApp.swift in Sources */,
+				6C4A7374FB1A4E1640717EC1 /* KeyboardSimulator.swift in Sources */,
+				EDD5115D61D86DAC3E396C0A /* SettingsView.swift in Sources */,
+				4CB2F77ED6BCB58542DAF212 /* StatusBarController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D4CB78722556F7FC7D90A746 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				79455FE9AFA990232EC0D024 /* ContentView.swift in Sources */,
+				DE5AFD713CAE63528B581395 /* FlickSlidesWatchApp.swift in Sources */,
+				3FAED3C460418FC2E9A54A19 /* GestureDetector.swift in Sources */,
+				6226BF90A1A2FEC6EF8D194F /* PresentationManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A96388B5B6273651A7CE42E6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 77A7AC4A871EB5A36A6FA3FC /* FlickSlidesWatch */;
+			targetProxy = A6D65679AD94B8A6FF155408 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0B5E3FF63109E725D20044EC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Phone/FlickSlidesPhone.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Phone/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kristianniemi.FlickSlides;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		2A577E672299AF33F4D5EDC4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Release;
+		};
+		690D8117368D0CFCD5E0909E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Debug;
+		};
+		D00797566F8F52CC668A2B8F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Watch/FlickSlidesWatch.entitlements;
+				INFOPLIST_FILE = Watch/Info.plist;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.kristianniemi.FlickSlides;
+				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kristianniemi.FlickSlides.watchkitapp;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Release;
+		};
+		D5AEB432A6D718E3F48ECE12 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Mac/FlickSlidesMac.entitlements;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = Mac/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kristianniemi.FlickSlidesMac;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		FA2069F329E9859B5402C617 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Watch/FlickSlidesWatch.entitlements;
+				INFOPLIST_FILE = Watch/Info.plist;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.kristianniemi.FlickSlides;
+				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kristianniemi.FlickSlides.watchkitapp;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Debug;
+		};
+		FB03F815A624CE78B5666C41 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Phone/FlickSlidesPhone.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Phone/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kristianniemi.FlickSlides;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		FCA179236EFA9B2E3732B72D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Mac/FlickSlidesMac.entitlements;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = Mac/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kristianniemi.FlickSlidesMac;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0DC49FB96DD78E440AD220CD /* Build configuration list for PBXNativeTarget "FlickSlidesWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FA2069F329E9859B5402C617 /* Debug */,
+				D00797566F8F52CC668A2B8F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		871E7A6E2B782D00967564E7 /* Build configuration list for PBXNativeTarget "FlickSlidesPhone" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0B5E3FF63109E725D20044EC /* Debug */,
+				FB03F815A624CE78B5666C41 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		AA81D639D45A95C8CA8BF3CD /* Build configuration list for PBXProject "FlickSlides" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				690D8117368D0CFCD5E0909E /* Debug */,
+				2A577E672299AF33F4D5EDC4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		EA9F6BFD44FC6E9720F88C52 /* Build configuration list for PBXNativeTarget "FlickSlidesMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D5AEB432A6D718E3F48ECE12 /* Debug */,
+				FCA179236EFA9B2E3732B72D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		2A3A11840CE453E6408BBCFC /* XCLocalSwiftPackageReference ".." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ..;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3E1CA812A95A07DD4BE49ECF /* FlickSlidesKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FlickSlidesKit;
+		};
+		565A7CA81B259520A2C9BB1A /* FlickSlidesKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FlickSlidesKit;
+		};
+		92BC6288264FBF83284EC95E /* FlickSlidesKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FlickSlidesKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = FDFBA065688EF666522C6B32 /* Project object */;
+}
