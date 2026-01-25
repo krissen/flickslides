@@ -1,4 +1,5 @@
 import CoreGraphics
+import Foundation
 import FlickSlidesKit
 
 /// Simulerar tangentbordstryck via CGEvent.
