@@ -1,5 +1,6 @@
 import Foundation
 import CoreMotion
+import FlickSlidesKit
 
 /// Gestigenkänning baserad på accelerometer/gyroskop-data med state machine.
 ///
@@ -32,7 +33,7 @@ final class GestureDetector: ObservableObject {
         static let rotationThreshold: Double = 30.0         // grader/sekund
         static let gestureDebounceInterval: Double = 1.0    // sekunder
         static let samplingRate: Double = 50.0              // Hz
-        static let gestureTimeout: Double = 0.6             // sekunder - max tid för en gest
+        static let gestureTimeout: Double = 1.0             // sekunder - max tid för en gest
         static let gestureMinDuration: Double = 0.08        // sekunder - minimum tid för en gest (80ms)
         static let armLiftYMultiplier: Double = 1.5         // Y > X * multiplier = arm-lyft
         static let armLiftMinX: Double = 0.5                // g - minimum X för att inte vara arm-lyft
@@ -150,17 +151,28 @@ final class GestureDetector: ObservableObject {
     private var maxAccelerationInGesture: Double = 0
     private let peakWindowSize = 10
 
-    // Auto-reload configuration
-    private var lastConfigReload: Date = .distantPast
-    private let configReloadInterval: TimeInterval = 3.0  // Ladda om var 3:e sekund
-
     // DTW-baserad gestmatchning
     private let dtwMatcher = DTWMatcher()
     private let templateStore = GestureTemplateStore()
-    private var dtwSamples: [DTWMatcher.MotionSample] = []
+    private var dtwSamples: [MotionSample] = []
     private var dtwGestureStartTime: Date?
-    private var useDTW: Bool { dtwMatcher.hasTemplates }
     private let dtwConfidenceThreshold: Double = 0.6
+
+    // Pre-buffer för DTW (fångar början av gesten)
+    private var dtwPreBuffer: [(Date, CMAcceleration, CMRotationRate)] = []
+    private let dtwPreBufferSize = 10  // 200ms vid 50Hz
+
+    /// Avgör om DTW-strategi ska användas (har mallar och är aktiverat)
+    private var useDTWStrategy: Bool {
+        guard dtwMatcher.hasTemplates else { return false }
+        let defaults = UserDefaults(suiteName: "group.com.kristianniemi.FlickSlides") ?? .standard
+        return defaults.object(forKey: "useCalibration") as? Bool ?? true
+    }
+
+    /// Aktiv strategi (loggas vid start)
+    private var currentStrategy: String {
+        useDTWStrategy ? "DTW" : "threshold"
+    }
 
     // MARK: - Initialization
 
@@ -203,7 +215,7 @@ final class GestureDetector: ObservableObject {
         }
 
         isActive = true
-        log("Started with \(configuration.samplingRate) Hz, wrist=\(configuration.watchOnRightWrist ? "right" : "left")")
+        log("Started with \(configuration.samplingRate) Hz, wrist=\(configuration.watchOnRightWrist ? "right" : "left"), strategy=\(currentStrategy)")
     }
 
     func stop() {
@@ -216,6 +228,11 @@ final class GestureDetector: ObservableObject {
 
     /// Laddar om konfiguration från UserDefaults (anropas t.ex. vid app-aktivering)
     func reloadConfiguration() {
+        // Ändra inte config under pågående gest - kan orsaka inkonsekvent beteende
+        guard case .idle = gestureState, dtwGestureStartTime == nil else {
+            log("Configuration reload skipped - gesture in progress")
+            return
+        }
         configuration = Configuration.fromUserDefaults()
         log("Configuration reloaded: accel=\(configuration.accelerationThreshold)g, rot=\(configuration.rotationThreshold)°/s, debounce=\(configuration.debounceInterval)s, wrist=\(configuration.watchOnRightWrist ? "right" : "left")")
     }
@@ -224,17 +241,6 @@ final class GestureDetector: ObservableObject {
 
     private func processMotion(_ motion: CMDeviceMotion) {
         let now = Date()
-
-        // Auto-reload konfiguration var 3:e sekund
-        if now.timeIntervalSince(lastConfigReload) > configReloadInterval {
-            let oldWrist = configuration.watchOnRightWrist
-            configuration = Configuration.fromUserDefaults()
-            lastConfigReload = now
-
-            if oldWrist != configuration.watchOnRightWrist {
-                log("Config auto-reloaded: wrist changed to \(configuration.watchOnRightWrist ? "right" : "left")")
-            }
-        }
 
         let acc = motion.userAcceleration
         let rot = motion.rotationRate
@@ -270,31 +276,87 @@ final class GestureDetector: ObservableObject {
             }
         }
 
-        // Samla DTW-samples om vi är i en aktiv gest
-        collectDTWSample(now: now, acc: acc, rot: rot, accMagnitude: accMagnitude)
+        // Kör strategi baserat på om DTW-mallar finns
+        if useDTWStrategy {
+            // DTW-strategi: samla samples och matcha
+            collectDTWSample(now: now, acc: acc, rot: rot, effectiveRotX: effectiveRotX)
+            processDTWStrategy(now: now, accMagnitude: accMagnitude)
+        } else {
+            // Tröskelbaserad strategi: state machine
+            processStateMachine(
+                now: now,
+                acc: acc,
+                rot: rot,
+                accMagnitude: accMagnitude,
+                effectiveRotX: effectiveRotX
+            )
+        }
+    }
 
-        // State machine processing
-        processStateMachine(
-            now: now,
-            acc: acc,
-            rot: rot,
-            accMagnitude: accMagnitude,
-            effectiveRotX: effectiveRotX
-        )
+    // MARK: - Gesture Start Detection (Unified Trigger)
+
+    /// Avgör om en gest ska initieras baserat på sensordata.
+    /// Används av BÅDE DTW och tröskelbaserad strategi för konsekvent beteende.
+    ///
+    /// Krav för att starta gest:
+    /// - X-acceleration dominerar (sidledrörelse)
+    /// - X-acceleration > 0.5g
+    /// - Rotation i pronation/supination-axeln > 10°/s
+    private func shouldStartGesture(acc: CMAcceleration, effectiveRotX: Double) -> Bool {
+        let absX = abs(acc.x)
+        let absY = abs(acc.y)
+        let absZ = abs(acc.z)
+
+        // X måste vara den dominanta axeln för en riktig bladvänd-gest
+        let xIsLargest = absX >= absY && absX >= absZ
+        let xIsSignificant = absX > 0.5  // Minst 0.5g i sidled
+
+        guard xIsLargest && xIsSignificant else {
+            return false
+        }
+
+        // Rotation måste ha påbörjats
+        let rotationStarted = abs(effectiveRotX) > Defaults.initiationRotationThreshold
+
+        return rotationStarted
     }
 
     // MARK: - DTW Sample Collection
 
-    private func collectDTWSample(now: Date, acc: CMAcceleration, rot: CMRotationRate, accMagnitude: Double) {
-        // Starta sampling när acceleration överstiger tröskel
-        if dtwGestureStartTime == nil && accMagnitude > 1.0 {
-            dtwGestureStartTime = now
-            dtwSamples.removeAll()
+    private func collectDTWSample(now: Date, acc: CMAcceleration, rot: CMRotationRate, effectiveRotX: Double) {
+        // Buffra kontinuerligt för att fånga början av gesten
+        if dtwGestureStartTime == nil {
+            dtwPreBuffer.append((now, acc, rot))
+            if dtwPreBuffer.count > dtwPreBufferSize {
+                dtwPreBuffer.removeFirst()
+            }
+        }
+
+        // Starta sampling med samma trigger som state machine
+        if dtwGestureStartTime == nil && shouldStartGesture(acc: acc, effectiveRotX: effectiveRotX) {
+            // Använd första sample i pre-buffern som startpunkt
+            let actualStartTime = dtwPreBuffer.first?.0 ?? now
+            dtwGestureStartTime = actualStartTime
+
+            // Konvertera pre-buffer till samples
+            dtwSamples = dtwPreBuffer.map { (timestamp, a, r) in
+                MotionSample(
+                    timestamp: timestamp.timeIntervalSince(actualStartTime),
+                    accX: a.x,
+                    accY: a.y,
+                    accZ: a.z,
+                    rotX: r.x * 180.0 / .pi,
+                    rotY: r.y * 180.0 / .pi,
+                    rotZ: r.z * 180.0 / .pi
+                )
+            }
+            dtwPreBuffer.removeAll()
+            log("DTW sampling started (unified trigger)")
         }
 
         // Samla samples under aktiv gest
         if let startTime = dtwGestureStartTime {
-            let sample = DTWMatcher.MotionSample(
+            let sample = MotionSample(
                 timestamp: now.timeIntervalSince(startTime),
                 accX: acc.x,
                 accY: acc.y,
@@ -304,17 +366,11 @@ final class GestureDetector: ObservableObject {
                 rotZ: rot.z * 180.0 / .pi
             )
             dtwSamples.append(sample)
-
-            // Avsluta sampling efter 600ms eller när acceleration sjunker
-            let elapsed = now.timeIntervalSince(startTime)
-            if elapsed > 0.6 || (elapsed > 0.1 && accMagnitude < 0.3) {
-                // Sampling klar, matchar i processStateMachine
-            }
         }
     }
 
     private func tryDTWMatch() -> DetectedGesture? {
-        guard useDTW, dtwSamples.count >= 5 else { return nil }
+        guard dtwSamples.count >= 5 else { return nil }
 
         let result = dtwMatcher.match(dtwSamples)
 
@@ -337,10 +393,35 @@ final class GestureDetector: ObservableObject {
     private func resetDTWState() {
         dtwGestureStartTime = nil
         dtwSamples.removeAll()
+        dtwPreBuffer.removeAll()
     }
 
-    // MARK: - State Machine
+    // MARK: - DTW Strategy
 
+    /// Processar DTW-strategin (endast anropas när useDTWStrategy == true)
+    private func processDTWStrategy(now: Date, accMagnitude: Double) {
+        guard let startTime = dtwGestureStartTime else { return }
+
+        let elapsed = now.timeIntervalSince(startTime)
+        let samplingComplete = elapsed > 1.0 || (elapsed > 0.15 && accMagnitude < 0.2)
+
+        guard samplingComplete else { return }
+
+        if let gesture = tryDTWMatch() {
+            lastGestureTime = now
+            lastDetectedGesture = gesture
+            onGestureDetected?(gesture)
+            log("DETECTED (DTW): \(gesture)")
+        } else {
+            log("DTW: no match found, samples=\(dtwSamples.count)")
+        }
+
+        resetDTWState()
+    }
+
+    // MARK: - Threshold Strategy (State Machine)
+
+    /// Processar tröskelbaserad strategi (endast anropas när useDTWStrategy == false)
     private func processStateMachine(
         now: Date,
         acc: CMAcceleration,
@@ -348,27 +429,6 @@ final class GestureDetector: ObservableObject {
         accMagnitude: Double,
         effectiveRotX: Double
     ) {
-        // Försök DTW-matchning först om vi har mallar och sampling är klar
-        if useDTW, let startTime = dtwGestureStartTime {
-            let elapsed = now.timeIntervalSince(startTime)
-            let samplingComplete = elapsed > 0.6 || (elapsed > 0.1 && accMagnitude < 0.3)
-
-            if samplingComplete {
-                if let gesture = tryDTWMatch() {
-                    // DTW-match lyckades
-                    lastGestureTime = now
-                    lastDetectedGesture = gesture
-                    onGestureDetected?(gesture)
-                    log("DETECTED (DTW): \(gesture)")
-                    resetState()
-                    resetDTWState()
-                    return
-                }
-                // Ingen DTW-match, fortsätt med tröskelbaserad fallback
-                resetDTWState()
-            }
-        }
-
         switch gestureState {
         case .idle:
             handleIdleState(now: now, acc: acc, accMagnitude: accMagnitude, effectiveRotX: effectiveRotX)
@@ -387,28 +447,14 @@ final class GestureDetector: ObservableObject {
         accMagnitude: Double,
         effectiveRotX: Double
     ) {
-        // Krav för initiation:
-        // 1. X-acceleration dominerar (sidledrörelse, inte arm-lyft)
-        // 2. Rotation påbörjad i rätt axel
-        // 3. Acceleration över minimum
-
-        let absX = abs(acc.x)
-        let absY = abs(acc.y)
-        let absZ = abs(acc.z)
-
-        // X måste vara den dominanta axeln för en riktig bladvänd-gest
-        // Arm-lyft har ofta Y eller Z dominant
-        let xIsLargest = absX >= absY && absX >= absZ
-        let xIsSignificant = absX > 0.5  // Minst 0.5g i sidled
-
-        guard xIsLargest && xIsSignificant else {
+        // Använd gemensam trigger-funktion
+        guard shouldStartGesture(acc: acc, effectiveRotX: effectiveRotX) else {
             return
         }
 
-        let rotationStarted = abs(effectiveRotX) > Defaults.initiationRotationThreshold
+        // Kräv också tillräcklig total acceleration
         let sufficientAcceleration = accMagnitude > configuration.accelerationThreshold * 0.5
-
-        guard rotationStarted && sufficientAcceleration else {
+        guard sufficientAcceleration else {
             return
         }
 

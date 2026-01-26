@@ -1,4 +1,5 @@
 import Foundation
+import FlickSlidesKit
 
 /// Dynamic Time Warping för gestmatchning.
 ///
@@ -8,45 +9,17 @@ final class DTWMatcher {
 
     // MARK: - Types
 
-    struct GestureTemplate: Codable, Identifiable {
-        let id: UUID
-        let label: GestureLabel
-        let samples: [MotionSample]
-        let createdAt: Date
-
-        init(label: GestureLabel, samples: [MotionSample]) {
-            self.id = UUID()
-            self.label = label
-            self.samples = samples
-            self.createdAt = Date()
-        }
-    }
-
-    enum GestureLabel: String, Codable, CaseIterable {
-        case flickForward   // NEXT
-        case flickBackward  // PREV
-        case negative       // Inte en gest
-    }
-
-    struct MotionSample: Codable {
-        let timestamp: TimeInterval  // Relativ till gestens start
-        let accX: Double
-        let accY: Double
-        let accZ: Double
-        let rotX: Double
-        let rotY: Double
-        let rotZ: Double
-
-        var asArray: [Double] {
-            [accX, accY, accZ, rotX, rotY, rotZ]
-        }
-    }
-
     struct MatchResult {
         let label: GestureLabel?
         let confidence: Double  // 0.0 - 1.0
         let distance: Double
     }
+
+    // MARK: - Constants
+
+    /// Absolut avståndströskel som fallback när inga negativa mallar finns.
+    /// Värdet är baserat på typiska DTW-avstånd för korrekta gestmatchningar.
+    private static let absoluteDistanceThreshold: Double = 15.0
 
     // MARK: - Properties
 
@@ -111,6 +84,15 @@ final class DTWMatcher {
             }
         }
 
+        // Validera att vi har mallar för den matchade labeln
+        // (skyddar mot edge case där averagedForward/Backward existerar men utan underliggande mallar)
+        if let label = bestLabel {
+            let hasTemplatesForLabel = templates.contains { $0.label == label }
+            guard hasTemplatesForLabel else {
+                return MatchResult(label: nil, confidence: 0, distance: bestDistance)
+            }
+        }
+
         // Jämför med negativa mallar
         let negativeTemplates = templates.filter { $0.label == .negative }
         var minNegativeDistance = Double.infinity
@@ -119,11 +101,28 @@ final class DTWMatcher {
             minNegativeDistance = min(minNegativeDistance, distance)
         }
 
-        // Om bästa positiva match är betydligt bättre än negativa
+        // Bestäm tröskel: använd negativa mallar om de finns, annars absolut tröskel
+        let hasNegativeTemplates = !negativeTemplates.isEmpty
+        let threshold: Double
         let margin = 0.7  // 30% marginal
-        if bestDistance < minNegativeDistance * margin {
-            let confidence = 1.0 - (bestDistance / max(minNegativeDistance, 1))
-            return MatchResult(label: bestLabel, confidence: min(confidence, 1.0), distance: bestDistance)
+
+        if hasNegativeTemplates {
+            // Om vi har negativa mallar, kräv att positiv match är betydligt bättre
+            threshold = minNegativeDistance * margin
+        } else {
+            // Utan negativa mallar: använd absolut tröskel som fallback
+            // Detta förhindrar att DTW godkänner ALLA gester
+            threshold = Self.absoluteDistanceThreshold
+        }
+
+        // Kontrollera om bästa match passerar tröskeln
+        if bestDistance < threshold {
+            // Beräkna confidence: normalisera till 0.0-1.0
+            // confidence = 1.0 vid bestDistance = 0, avtar mot 0.0 vid threshold
+            let normalizedDistance = bestDistance / threshold
+            let confidence = max(0.0, min(1.0, 1.0 - normalizedDistance))
+
+            return MatchResult(label: bestLabel, confidence: confidence, distance: bestDistance)
         }
 
         return MatchResult(label: nil, confidence: 0, distance: bestDistance)
@@ -184,6 +183,39 @@ final class DTWMatcher {
         // Använd längsta sekvensen som referens
         guard let maxLength = sequences.map(\.count).max(), maxLength > 0 else { return nil }
 
+        // Guard: om maxLength == 1 kan vi inte interpolera, returnera första samplet direkt
+        // Detta förhindrar division by zero i indexberäkningen nedan
+        if maxLength == 1 {
+            // Samla alla första samples och beräkna medelvärde
+            var sumAccX = 0.0, sumAccY = 0.0, sumAccZ = 0.0
+            var sumRotX = 0.0, sumRotY = 0.0, sumRotZ = 0.0
+            var sumTime = 0.0
+
+            for seq in sequences where !seq.isEmpty {
+                let sample = seq[0]
+                sumAccX += sample.accX
+                sumAccY += sample.accY
+                sumAccZ += sample.accZ
+                sumRotX += sample.rotX
+                sumRotY += sample.rotY
+                sumRotZ += sample.rotZ
+                sumTime += sample.timestamp
+            }
+
+            let count = Double(sequences.filter { !$0.isEmpty }.count)
+            guard count > 0 else { return nil }
+
+            return [MotionSample(
+                timestamp: sumTime / count,
+                accX: sumAccX / count,
+                accY: sumAccY / count,
+                accZ: sumAccZ / count,
+                rotX: sumRotX / count,
+                rotY: sumRotY / count,
+                rotZ: sumRotZ / count
+            )]
+        }
+
         var result: [MotionSample] = []
 
         for i in 0..<maxLength {
@@ -194,6 +226,7 @@ final class DTWMatcher {
 
             for seq in sequences {
                 // Interpolera index för sekvenser av olika längd
+                // Säker division: maxLength > 1 garanterat av guard ovan
                 let idx = Int(Double(i) * Double(seq.count - 1) / Double(maxLength - 1))
                 if idx < seq.count {
                     let sample = seq[idx]
