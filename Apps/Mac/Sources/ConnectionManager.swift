@@ -23,6 +23,19 @@ final class ConnectionManager: NSObject, ObservableObject {
     private var authorizedPeerID: MCPeerID?
     private var appListTimer: Timer?
 
+    /// Betrodda peer-namn (sparas i UserDefaults)
+    @Published private(set) var trustedPeers: Set<String> = []
+
+    /// Väntande anslutningsförfrågan
+    @Published private(set) var pendingInvitation: PendingInvitation?
+
+    struct PendingInvitation {
+        let peerName: String
+        let handler: (Bool) -> Void
+    }
+
+    private let trustedPeersKey = "FlickSlides.trustedPeers"
+
     /// Bundle identifiers för appar som stöds för presentation
     private let presentationAppBundleIds: Set<String> = [
         "com.apple.iWork.Keynote",
@@ -41,7 +54,57 @@ final class ConnectionManager: NSObject, ObservableObject {
     init(keyboardSimulator: KeyboardSimulator = KeyboardSimulator()) {
         self.keyboardSimulator = keyboardSimulator
         super.init()
+        loadTrustedPeers()
         setupMultipeer()
+    }
+
+    // MARK: - Trusted Peers
+
+    private func loadTrustedPeers() {
+        if let saved = UserDefaults.standard.stringArray(forKey: trustedPeersKey) {
+            trustedPeers = Set(saved)
+            print("[ConnectionManager] Loaded \(trustedPeers.count) trusted peers")
+        }
+    }
+
+    private func saveTrustedPeers() {
+        UserDefaults.standard.set(Array(trustedPeers), forKey: trustedPeersKey)
+    }
+
+    /// Lägg till en peer som betrodd
+    func trustPeer(_ peerName: String) {
+        trustedPeers.insert(peerName)
+        saveTrustedPeers()
+        print("[ConnectionManager] Added trusted peer: \(peerName)")
+    }
+
+    /// Ta bort en peer från betrodda
+    func untrustPeer(_ peerName: String) {
+        trustedPeers.remove(peerName)
+        saveTrustedPeers()
+        print("[ConnectionManager] Removed trusted peer: \(peerName)")
+    }
+
+    /// Acceptera väntande anslutning
+    func acceptPendingInvitation(andTrust: Bool) {
+        guard let invitation = pendingInvitation else { return }
+
+        if andTrust {
+            trustPeer(invitation.peerName)
+        }
+
+        invitation.handler(true)
+        pendingInvitation = nil
+        print("[ConnectionManager] Accepted invitation from: \(invitation.peerName)")
+    }
+
+    /// Avvisa väntande anslutning
+    func rejectPendingInvitation() {
+        guard let invitation = pendingInvitation else { return }
+
+        invitation.handler(false)
+        pendingInvitation = nil
+        print("[ConnectionManager] Rejected invitation from: \(invitation.peerName)")
     }
 
     private func setupMultipeer() {
@@ -217,12 +280,15 @@ extension ConnectionManager: MCSessionDelegate {
             self.lastCommandSource = source
         }
 
-        let success = keyboardSimulator.handleCommand(command, targetAppBundleId: effectiveTargetApp)
+        // Kör handleCommand asynkront för att undvika blockerande Thread.sleep
+        Task {
+            let success = await keyboardSimulator.handleCommand(command, targetAppBundleId: effectiveTargetApp)
 
-        // Skicka ACK tillbaka
-        let ack = CommandAck(command: command, success: success)
-        if let ackData = try? JSONEncoder().encode(ack) {
-            try? session.send(ackData, toPeers: [peerID], with: .reliable)
+            // Skicka ACK tillbaka
+            let ack = CommandAck(command: command, success: success)
+            if let ackData = try? JSONEncoder().encode(ack) {
+                try? self.session.send(ackData, toPeers: [peerID], with: .reliable)
+            }
         }
     }
 
@@ -238,9 +304,40 @@ extension ConnectionManager: MCNearbyServiceAdvertiserDelegate {
                    didReceiveInvitationFromPeer peerID: MCPeerID,
                    withContext context: Data?,
                    invitationHandler: @escaping (Bool, MCSession?) -> Void) {
-        // Acceptera anslutning
-        invitationHandler(true, session)
-        print("[ConnectionManager] Accepted invitation from: \(peerID.displayName)")
+        let peerName = peerID.displayName
+
+        // Om peer redan är betrodd, acceptera direkt
+        if trustedPeers.contains(peerName) {
+            invitationHandler(true, session)
+            print("[ConnectionManager] Auto-accepted trusted peer: \(peerName)")
+            return
+        }
+
+        // Annars, spara förfrågan och vänta på användarens beslut
+        DispatchQueue.main.async {
+            // Avvisa eventuell tidigare väntande förfrågan
+            self.pendingInvitation?.handler(false)
+
+            self.pendingInvitation = PendingInvitation(peerName: peerName) { accepted in
+                invitationHandler(accepted, accepted ? self.session : nil)
+            }
+
+            print("[ConnectionManager] Pending invitation from unknown peer: \(peerName)")
+
+            // Visa notifikation till användaren
+            self.showConnectionRequestNotification(from: peerName)
+        }
+    }
+
+    private func showConnectionRequestNotification(from peerName: String) {
+        let notification = NSUserNotification()
+        notification.title = "FlickSlides"
+        notification.informativeText = "\(peerName) vill ansluta"
+        notification.hasActionButton = true
+        notification.actionButtonTitle = "Tillåt"
+        notification.otherButtonTitle = "Avvisa"
+
+        NSUserNotificationCenter.default.deliver(notification)
     }
 
     func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didNotStartAdvertisingPeer error: Error) {
