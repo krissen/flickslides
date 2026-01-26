@@ -869,7 +869,7 @@ Dessa tester ska **INTE** trigga någon gest.
 [ ] Engångshändelse
 
 ### Bilagor
-- [Skärmdump / Logg]
+- [Loggutdrag]
 
 ### Ytterligare information
 [OS-version, app-version, etc.]
