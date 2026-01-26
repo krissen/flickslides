@@ -136,5 +136,5 @@ Om inget annat fungerar:
 ## Kontakta support
 
 Om du fortfarande har problem:
-- Skapa ett issue på [GitHub](https://github.com/...)
+- Skapa ett issue på [GitHub](https://github.com/kniemi/flickslides/issues)
 - Inkludera: iOS/macOS/watchOS-version, enhetmodell, steg för att reproducera
