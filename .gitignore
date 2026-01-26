@@ -49,3 +49,11 @@ Carthage/Build/
 xcuserdata/
 *.xcuserdatad/
 DerivedData/
+
+# Internal project files (not for public)
+CLAUDE.md
+GUIDELINES.md
+PLAN.md
+staff.md
+agents/
+docs/internal/

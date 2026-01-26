@@ -3,6 +3,7 @@ import Foundation
 import MultipeerConnectivity
 import Combine
 import FlickSlidesKit
+import UserNotifications
 
 /// Hanterar MultipeerConnectivity med iOS.
 final class ConnectionManager: NSObject, ObservableObject {
@@ -330,14 +331,34 @@ extension ConnectionManager: MCNearbyServiceAdvertiserDelegate {
     }
 
     private func showConnectionRequestNotification(from peerName: String) {
-        let notification = NSUserNotification()
-        notification.title = "FlickSlides"
-        notification.informativeText = "\(peerName) vill ansluta"
-        notification.hasActionButton = true
-        notification.actionButtonTitle = "Tillåt"
-        notification.otherButtonTitle = "Avvisa"
+        let content = UNMutableNotificationContent()
+        content.title = "FlickSlides"
+        content.body = "\(peerName) vill ansluta"
+        content.categoryIdentifier = "CONNECTION_REQUEST"
+        content.sound = .default
 
-        NSUserNotificationCenter.default.deliver(notification)
+        let request = UNNotificationRequest(
+            identifier: "connection-\(peerName)-\(Date().timeIntervalSince1970)",
+            content: content,
+            trigger: nil
+        )
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("[ConnectionManager] Failed to show notification: \(error)")
+            }
+        }
+    }
+
+    /// Begär behörighet för notifikationer (anropas vid app-start)
+    static func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
+            if let error = error {
+                print("[ConnectionManager] Notification permission error: \(error)")
+            } else {
+                print("[ConnectionManager] Notification permission granted: \(granted)")
+            }
+        }
     }
 
     func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didNotStartAdvertisingPeer error: Error) {
