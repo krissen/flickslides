@@ -2,6 +2,7 @@ import Foundation
 import HealthKit
 import WatchConnectivity
 import WatchKit
+import FlickSlidesKit
 
 /// Hanterar presentationsläge och WCSession-kommunikation.
 /// Använder HKWorkoutSession för att hålla sensorer aktiva i bakgrunden.
@@ -77,10 +78,22 @@ final class PresentationManager: NSObject, ObservableObject {
 
         session.end()
 
+        // Kolla om användaren vill spara workout till Hälsa-appen
+        let defaults = UserDefaults(suiteName: "group.com.kristianniemi.FlickSlides") ?? .standard
+        let saveWorkout = defaults.bool(forKey: "saveWorkoutsToHealth")
+
         do {
             try await builder.endCollection(at: Date())
-            try await builder.finishWorkout()
-            print("[PresentationManager] Workout session ended")
+
+            if saveWorkout {
+                // Spara workoutet till Health-appen
+                try await builder.finishWorkout()
+                print("[PresentationManager] Workout session ended and saved to Health")
+            } else {
+                // Kasta workoutet utan att spara
+                builder.discardWorkout()
+                print("[PresentationManager] Workout session ended (discarded, not saved to Health)")
+            }
         } catch {
             print("[PresentationManager] Failed to end workout: \(error)")
         }
@@ -236,6 +249,91 @@ extension PresentationManager: WCSessionDelegate {
             connectionState = session.isReachable ? "Ansluten" : "Frånkopplad"
             print("[PresentationManager] Reachability changed: \(connectionState)")
         }
+    }
+
+    /// Tar emot meddelanden från Phone.
+    nonisolated func session(
+        _ session: WCSession,
+        didReceiveMessage message: [String: Any]
+    ) {
+        // Kolla om det är ett kalibreringsmeddelande
+        if let calibrationMessage = CalibrationMessage.fromDictionary(message) {
+            Task { @MainActor in
+                WatchCalibrationCoordinator.shared.handleMessage(calibrationMessage)
+            }
+            return
+        }
+
+        // Övriga meddelanden (framtida utökning)
+        print("[PresentationManager] Received unknown message: \(message)")
+    }
+
+    /// Tar emot meddelanden med reply handler.
+    nonisolated func session(
+        _ session: WCSession,
+        didReceiveMessage message: [String: Any],
+        replyHandler: @escaping ([String: Any]) -> Void
+    ) {
+        // Kolla om det är ett kalibreringsmeddelande
+        if let calibrationMessage = CalibrationMessage.fromDictionary(message) {
+            Task { @MainActor in
+                WatchCalibrationCoordinator.shared.handleMessage(calibrationMessage)
+            }
+            replyHandler(["ack": true])
+            return
+        }
+
+        // Övriga meddelanden
+        replyHandler(["error": "Unknown message type"])
+    }
+
+    /// Tar emot userInfo från Phone (används för att överföra gestmallar och inställningar).
+    nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any]) {
+        // Kolla om det är gestmallar
+        if let data = userInfo["gestureTemplates"] as? Data {
+            do {
+                let templates = try JSONDecoder().decode([GestureTemplate].self, from: data)
+                let store = GestureTemplateStore()
+                store.save(templates)
+                print("[PresentationManager] Received \(templates.count) gesture templates from Phone")
+
+                // Meddela GestureDetector att ladda om mallarna
+                Task { @MainActor in
+                    self.gestureDetector.reloadDTWTemplates()
+                    print("[PresentationManager] DTW templates reloaded")
+                }
+            } catch {
+                print("[PresentationManager] Failed to decode gesture templates: \(error)")
+            }
+            return
+        }
+
+        // Kolla om kalibrering ska rensas
+        if userInfo["clearCalibration"] as? Bool == true {
+            let store = GestureTemplateStore()
+            store.clear()
+            print("[PresentationManager] Calibration cleared by Phone")
+
+            Task { @MainActor in
+                self.gestureDetector.reloadDTWTemplates()
+                print("[PresentationManager] DTW templates cleared")
+            }
+            return
+        }
+
+        // Kolla om useCalibration toggle ändrats
+        if let useCalibration = userInfo["useCalibration"] as? Bool {
+            let defaults = UserDefaults(suiteName: "group.com.kristianniemi.FlickSlides") ?? .standard
+            defaults.set(useCalibration, forKey: "useCalibration")
+            print("[PresentationManager] useCalibration set to \(useCalibration)")
+
+            Task { @MainActor in
+                self.gestureDetector.reloadDTWTemplates()
+            }
+            return
+        }
+
+        print("[PresentationManager] Received unknown userInfo: \(userInfo.keys)")
     }
 }
 
