@@ -11,6 +11,14 @@ final class MacConnectionManager: NSObject, ObservableObject {
     private var session: MCSession!
     private var browser: MCNearbyServiceBrowser!
 
+    // MARK: - Retry Configuration
+
+    /// Maximalt antal försök vid sändning
+    private let maxRetryAttempts = 3
+
+    /// Basfördröjning för exponentiell backoff (millisekunder)
+    private let baseRetryDelayMs: UInt64 = 100
+
     @Published var connectedMac: MCPeerID?
     @Published var availableMacs: [MCPeerID] = []
     @Published var connectionState: ConnectionState = .disconnected
@@ -80,18 +88,116 @@ final class MacConnectionManager: NSObject, ObservableObject {
         selectedApp = nil
     }
 
-    func sendCommand(_ command: String, source: BridgeCoordinator.CommandSource = .phone) {
-        guard let mac = connectedMac else { return }
+    /// Skickar ett kommando till Mac med retry-logik.
+    ///
+    /// Vid tillfälliga nätverksfel görs automatiska återförsök med exponentiell backoff.
+    /// - Parameters:
+    ///   - command: Kommandot att skicka (t.ex. "NEXT", "PREV")
+    ///   - source: Källa för kommandot (watch eller phone)
+    ///   - completion: Callback med resultat (nil vid success, Error vid misslyckande)
+    func sendCommand(
+        _ command: String,
+        source: BridgeCoordinator.CommandSource = .phone,
+        completion: ((Error?) -> Void)? = nil
+    ) {
+        sendCommand(command, source: source, gestureTimestamp: nil) { _ in
+            completion?(nil)
+        }
+    }
 
-        // Använd AppMessage.command för att inkludera målapp
+    /// Skickar ett kommando till Mac med retry-logik och latensloggning.
+    ///
+    /// - Parameters:
+    ///   - command: Kommandot att skicka (t.ex. "NEXT", "PREV")
+    ///   - source: Källa för kommandot (watch eller phone)
+    ///   - gestureTimestamp: Tidsstämpel från Watch för latensberäkning
+    ///   - executedHandler: Callback med tidsstämpel när kommandot körts på Mac
+    func sendCommand(
+        _ command: String,
+        source: BridgeCoordinator.CommandSource = .phone,
+        gestureTimestamp: TimeInterval?,
+        executedHandler: @escaping (TimeInterval) -> Void
+    ) {
+        guard let mac = connectedMac else {
+            let error = SendError.notConnected
+            print("[MacConnection] Failed to send \(command): \(error.localizedDescription)")
+            return
+        }
+
         let message = AppMessage.command(command, source: source.rawValue, targetApp: selectedApp?.id)
 
-        do {
-            let data = try JSONEncoder().encode(message)
-            try session.send(data, toPeers: [mac], with: .reliable)
-            print("[MacConnection] Sent: \(command) (from \(source.rawValue), target: \(selectedApp?.name ?? "any"))")
-        } catch {
-            print("[MacConnection] Failed to send: \(error)")
+        guard let data = try? JSONEncoder().encode(message) else {
+            let error = SendError.encodingFailed
+            print("[MacConnection] Failed to encode \(command): \(error.localizedDescription)")
+            return
+        }
+
+        // Spara callback för att anropas när ACK tas emot
+        pendingExecutedHandlers[command] = executedHandler
+
+        Task {
+            let result = await sendWithRetry(data: data, to: mac, command: command, source: source)
+
+            if case .failure = result {
+                await MainActor.run {
+                    self.pendingExecutedHandlers.removeValue(forKey: command)
+                }
+            }
+        }
+    }
+
+    /// Pending callbacks för executed timestamps
+    private var pendingExecutedHandlers: [String: (TimeInterval) -> Void] = [:]
+
+    /// Skickar data med retry-logik och exponentiell backoff.
+    private func sendWithRetry(
+        data: Data,
+        to mac: MCPeerID,
+        command: String,
+        source: BridgeCoordinator.CommandSource
+    ) async -> Result<Void, Error> {
+        var lastError: Error?
+
+        for attempt in 1...maxRetryAttempts {
+            do {
+                try session.send(data, toPeers: [mac], with: .reliable)
+                print("[MacConnection] Sent: \(command) (from \(source.rawValue), target: \(selectedApp?.name ?? "any"), attempt \(attempt)/\(maxRetryAttempts))")
+                return .success(())
+            } catch {
+                lastError = error
+                print("[MacConnection] Send attempt \(attempt)/\(maxRetryAttempts) failed: \(error.localizedDescription)")
+
+                // Vänta inte efter sista försöket
+                if attempt < maxRetryAttempts {
+                    let delayMs = baseRetryDelayMs * UInt64(1 << (attempt - 1))  // 100ms, 200ms, 400ms
+                    print("[MacConnection] Retrying in \(delayMs)ms...")
+                    try? await Task.sleep(nanoseconds: delayMs * 1_000_000)
+                }
+            }
+        }
+
+        print("[MacConnection] All \(maxRetryAttempts) attempts failed for \(command)")
+        return .failure(lastError ?? SendError.unknownError)
+    }
+
+    /// Fel som kan uppstå vid sändning
+    enum SendError: Error, LocalizedError {
+        case notConnected
+        case encodingFailed
+        case allRetriesFailed(underlyingError: Error)
+        case unknownError
+
+        var errorDescription: String? {
+            switch self {
+            case .notConnected:
+                return "Ingen Mac ansluten"
+            case .encodingFailed:
+                return "Kunde inte koda meddelande"
+            case .allRetriesFailed(let error):
+                return "Alla försök misslyckades: \(error.localizedDescription)"
+            case .unknownError:
+                return "Okänt fel"
+            }
         }
     }
 }
@@ -135,9 +241,23 @@ extension MacConnectionManager: MCSessionDelegate {
             return
         }
 
-        // Ta emot ACK från Mac (legacy)
-        if let ack = String(data: data, encoding: .utf8) {
-            print("[MacConnection] ACK from Mac: \(ack)")
+        // Ta emot ACK från Mac med tidsstämpel
+        if let ack = try? JSONDecoder().decode(CommandAck.self, from: data) {
+            let executedTimestamp = ack.timestamp.timeIntervalSince1970
+            print("[MacConnection] ACK from Mac: \(ack.command), success: \(ack.success)")
+
+            // Anropa pending handler
+            DispatchQueue.main.async {
+                if let handler = self.pendingExecutedHandlers.removeValue(forKey: ack.command) {
+                    handler(executedTimestamp)
+                }
+            }
+            return
+        }
+
+        // Legacy ACK (ren text)
+        if let ackString = String(data: data, encoding: .utf8) {
+            print("[MacConnection] Legacy ACK from Mac: \(ackString)")
         }
     }
 

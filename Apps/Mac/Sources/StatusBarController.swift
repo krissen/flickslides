@@ -8,12 +8,16 @@ final class StatusBarController {
     private var cancellables = Set<AnyCancellable>()
 
     private var statusMenuItem: NSMenuItem!
+    private var pendingInvitationItem: NSMenuItem!
+    private var trustedPeersSubmenu: NSMenu!
+    private var accessibilityMenuItem: NSMenuItem!
 
     init(connectionManager: ConnectionManager) {
         self.connectionManager = connectionManager
         setupStatusItem()
         setupMenu()
         observeConnectionState()
+        startAccessibilityStatusTimer()
     }
 
     private func setupStatusItem() {
@@ -41,6 +45,11 @@ final class StatusBarController {
 
         menu.addItem(NSMenuItem.separator())
 
+        // Väntande anslutningsförfrågan
+        pendingInvitationItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        pendingInvitationItem.isHidden = true
+        menu.addItem(pendingInvitationItem)
+
         // Senaste kommando
         let lastCommandItem = NSMenuItem(title: "Senaste: -", action: nil, keyEquivalent: "")
         lastCommandItem.isEnabled = false
@@ -49,14 +58,23 @@ final class StatusBarController {
 
         menu.addItem(NSMenuItem.separator())
 
-        // Accessibility-status
-        let accessibilityItem = NSMenuItem(
-            title: AccessibilityManager.isAccessibilityEnabled ? "✓ Behörighet OK" : "⚠ Behörighet saknas",
+        // Betrodda enheter
+        let trustedPeersItem = NSMenuItem(title: "Betrodda enheter", action: nil, keyEquivalent: "")
+        trustedPeersSubmenu = NSMenu()
+        trustedPeersItem.submenu = trustedPeersSubmenu
+        menu.addItem(trustedPeersItem)
+
+        menu.addItem(NSMenuItem.separator())
+
+        // Accessibility-status (uppdateras dynamiskt)
+        accessibilityMenuItem = NSMenuItem(
+            title: "",
             action: #selector(openAccessibilitySettings),
             keyEquivalent: ""
         )
-        accessibilityItem.target = self
-        menu.addItem(accessibilityItem)
+        accessibilityMenuItem.target = self
+        updateAccessibilityStatus()
+        menu.addItem(accessibilityMenuItem)
 
         menu.addItem(NSMenuItem.separator())
 
@@ -116,6 +134,101 @@ final class StatusBarController {
             }
         }
         .store(in: &cancellables)
+
+        // Observera väntande anslutningsförfrågningar
+        connectionManager.$pendingInvitation
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] invitation in
+                guard let self else { return }
+                self.updatePendingInvitation(invitation)
+            }
+            .store(in: &cancellables)
+
+        // Observera betrodda enheter
+        connectionManager.$trustedPeers
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] peers in
+                guard let self else { return }
+                self.updateTrustedPeersSubmenu(peers)
+            }
+            .store(in: &cancellables)
+    }
+
+    private func updatePendingInvitation(_ invitation: ConnectionManager.PendingInvitation?) {
+        if let invitation {
+            pendingInvitationItem.isHidden = false
+
+            let submenu = NSMenu()
+            let acceptItem = NSMenuItem(title: "Tillåt \(invitation.peerName)", action: #selector(acceptInvitation), keyEquivalent: "")
+            acceptItem.target = self
+            submenu.addItem(acceptItem)
+
+            let acceptAndTrustItem = NSMenuItem(title: "Tillåt och kom ihåg", action: #selector(acceptAndTrustInvitation), keyEquivalent: "")
+            acceptAndTrustItem.target = self
+            submenu.addItem(acceptAndTrustItem)
+
+            let rejectItem = NSMenuItem(title: "Avvisa", action: #selector(rejectInvitation), keyEquivalent: "")
+            rejectItem.target = self
+            submenu.addItem(rejectItem)
+
+            pendingInvitationItem.title = "⚠️ \(invitation.peerName) vill ansluta"
+            pendingInvitationItem.submenu = submenu
+        } else {
+            pendingInvitationItem.isHidden = true
+            pendingInvitationItem.submenu = nil
+        }
+    }
+
+    private func updateTrustedPeersSubmenu(_ peers: Set<String>) {
+        trustedPeersSubmenu.removeAllItems()
+
+        if peers.isEmpty {
+            let emptyItem = NSMenuItem(title: "Inga betrodda enheter", action: nil, keyEquivalent: "")
+            emptyItem.isEnabled = false
+            trustedPeersSubmenu.addItem(emptyItem)
+        } else {
+            for peer in peers.sorted() {
+                let item = NSMenuItem(title: peer, action: nil, keyEquivalent: "")
+                let removeItem = NSMenuItem(title: "Ta bort", action: #selector(removeTrustedPeer(_:)), keyEquivalent: "")
+                removeItem.target = self
+                removeItem.representedObject = peer
+
+                let submenu = NSMenu()
+                submenu.addItem(removeItem)
+                item.submenu = submenu
+
+                trustedPeersSubmenu.addItem(item)
+            }
+        }
+    }
+
+    @objc private func acceptInvitation() {
+        connectionManager.acceptPendingInvitation(andTrust: false)
+    }
+
+    @objc private func acceptAndTrustInvitation() {
+        connectionManager.acceptPendingInvitation(andTrust: true)
+    }
+
+    @objc private func rejectInvitation() {
+        connectionManager.rejectPendingInvitation()
+    }
+
+    @objc private func removeTrustedPeer(_ sender: NSMenuItem) {
+        guard let peerName = sender.representedObject as? String else { return }
+        connectionManager.untrustPeer(peerName)
+    }
+
+    private func updateAccessibilityStatus() {
+        let isEnabled = AccessibilityManager.isAccessibilityEnabled
+        accessibilityMenuItem.title = isEnabled ? "✓ Behörighet OK" : "⚠ Behörighet saknas"
+    }
+
+    private func startAccessibilityStatusTimer() {
+        // Kontrollera accessibility-status var 5:e sekund
+        Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            self?.updateAccessibilityStatus()
+        }
     }
 
     @objc private func openAccessibilitySettings() {

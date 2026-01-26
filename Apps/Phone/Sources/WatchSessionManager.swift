@@ -52,6 +52,46 @@ final class WatchSessionManager: NSObject, ObservableObject {
             }
         }
     }
+
+    // MARK: - Settings Sync
+
+    /// Skickar uppdaterade inställningar till Watch.
+    /// Använder `transferUserInfo` för garanterad leverans även om Watch inte är nåbar just nu.
+    func syncSettings(
+        accelerationThreshold: Double? = nil,
+        rotationThreshold: Double? = nil,
+        debounceInterval: Double? = nil,
+        watchOnRightWrist: Bool? = nil
+    ) {
+        var payload: [String: Any] = ["type": "settingsUpdate"]
+
+        if let accel = accelerationThreshold {
+            payload["accelerationThreshold"] = accel
+        }
+        if let rot = rotationThreshold {
+            payload["rotationThreshold"] = rot
+        }
+        if let debounce = debounceInterval {
+            payload["gestureDebounceInterval"] = debounce
+        }
+        if let wrist = watchOnRightWrist {
+            payload["watchOnRightWrist"] = wrist
+        }
+
+        // Om Watch är nåbar, skicka direkt för snabb respons
+        if WCSession.default.isReachable {
+            WCSession.default.sendMessage(payload, replyHandler: nil) { error in
+                print("[WatchSession] sendMessage failed, queuing via transferUserInfo: \(error)")
+                // Fallback till transferUserInfo vid fel
+                WCSession.default.transferUserInfo(payload)
+            }
+            print("[WatchSession] Sent settings update via sendMessage")
+        } else {
+            // Köa för leverans när Watch blir tillgänglig
+            WCSession.default.transferUserInfo(payload)
+            print("[WatchSession] Queued settings update via transferUserInfo")
+        }
+    }
 }
 
 // MARK: - WCSessionDelegate
@@ -131,20 +171,33 @@ extension WatchSessionManager: WCSessionDelegate {
         }
 
         let receiveTimestamp = Date()
+        let gestureTimestamp = message["gestureTimestamp"] as? TimeInterval
+
+        // Logga Watch→Phone latens
+        if let gestureTs = gestureTimestamp {
+            let watchToPhoneMs = (receiveTimestamp.timeIntervalSince1970 - gestureTs) * 1000
+            print("[WatchSession] Watch→Phone latency: \(String(format: "%.0f", watchToPhoneMs))ms")
+        }
 
         DispatchQueue.main.async {
             self.lastCommand = command
             self.lastCommandTimestamp = receiveTimestamp
         }
 
-        // Vidarebefordra till Mac
-        BridgeCoordinator.shared.forwardToMac(command: command, timestamp: receiveTimestamp)
-
-        // Bekräfta till Watch
-        replyHandler([
-            "ack": command,
-            "timestamp": receiveTimestamp.timeIntervalSince1970
-        ])
+        // Vidarebefordra till Mac med original gestureTimestamp
+        BridgeCoordinator.shared.forwardToMac(
+            command: command,
+            timestamp: receiveTimestamp,
+            gestureTimestamp: gestureTimestamp,
+            replyHandler: { executedTimestamp in
+                // Skicka tillbaka executedTimestamp till Watch
+                replyHandler([
+                    "ack": command,
+                    "timestamp": receiveTimestamp.timeIntervalSince1970,
+                    "executedTimestamp": executedTimestamp
+                ])
+            }
+        )
 
         print("[WatchSession] Received with reply: \(command)")
     }

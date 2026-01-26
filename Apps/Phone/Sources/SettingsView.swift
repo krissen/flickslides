@@ -77,6 +77,7 @@ struct SettingsView: View {
                 .pickerStyle(.segmented)
                 .onChange(of: watchOnRightWrist) { _, newValue in
                     defaults.set(newValue, forKey: Keys.watchOnRightWrist)
+                    WatchSessionManager.shared.syncSettings(watchOnRightWrist: newValue)
                 }
             } header: {
                 Text("Handled")
@@ -250,14 +251,17 @@ struct SettingsView: View {
 
     private func saveAccelerationThreshold() {
         defaults.set(accelerationThreshold, forKey: Keys.accelerationThreshold)
+        WatchSessionManager.shared.syncSettings(accelerationThreshold: accelerationThreshold)
     }
 
     private func saveRotationThreshold() {
         defaults.set(rotationThreshold, forKey: Keys.rotationThreshold)
+        WatchSessionManager.shared.syncSettings(rotationThreshold: rotationThreshold)
     }
 
     private func saveDebounceInterval() {
         defaults.set(debounceInterval, forKey: Keys.gestureDebounceInterval)
+        WatchSessionManager.shared.syncSettings(debounceInterval: debounceInterval)
     }
 
     private func resetThresholdsOnly() {
@@ -268,6 +272,13 @@ struct SettingsView: View {
         defaults.set(accelerationThreshold, forKey: Keys.accelerationThreshold)
         defaults.set(rotationThreshold, forKey: Keys.rotationThreshold)
         defaults.set(debounceInterval, forKey: Keys.gestureDebounceInterval)
+
+        // Synkronisera alla trösklar till Watch
+        WatchSessionManager.shared.syncSettings(
+            accelerationThreshold: accelerationThreshold,
+            rotationThreshold: rotationThreshold,
+            debounceInterval: debounceInterval
+        )
     }
 
     private func clearCalibration() {
