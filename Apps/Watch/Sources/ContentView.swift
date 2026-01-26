@@ -26,7 +26,7 @@ struct ContentView: View {
             .padding(.vertical, 8)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink(destination: CalibrationView()) {
+                    NavigationLink(destination: WatchCalibrationView()) {
                         Image(systemName: "gearshape")
                             .font(.caption)
                     }
@@ -111,6 +111,7 @@ struct ContentView: View {
     }
 
     // MARK: - Fallback Buttons
+    // Knapparna fungerar alltid (även utan gestdetektering) så länge det finns anslutning
 
     private var fallbackButtons: some View {
         HStack(spacing: 16) {
@@ -123,8 +124,6 @@ struct ContentView: View {
                     .frame(width: 44, height: 36)
             }
             .buttonStyle(.bordered)
-            .disabled(!presentationManager.isPresentationMode)
-            .opacity(presentationManager.isPresentationMode ? 1.0 : 0.4)
 
             Button {
                 sendFallbackCommand("NEXT")
@@ -135,8 +134,6 @@ struct ContentView: View {
                     .frame(width: 44, height: 36)
             }
             .buttonStyle(.bordered)
-            .disabled(!presentationManager.isPresentationMode)
-            .opacity(presentationManager.isPresentationMode ? 1.0 : 0.4)
         }
     }
 
