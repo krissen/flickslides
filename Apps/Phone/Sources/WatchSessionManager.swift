@@ -52,6 +52,46 @@ final class WatchSessionManager: NSObject, ObservableObject {
             }
         }
     }
+
+    // MARK: - Settings Sync
+
+    /// Skickar uppdaterade inställningar till Watch.
+    /// Använder `transferUserInfo` för garanterad leverans även om Watch inte är nåbar just nu.
+    func syncSettings(
+        accelerationThreshold: Double? = nil,
+        rotationThreshold: Double? = nil,
+        debounceInterval: Double? = nil,
+        watchOnRightWrist: Bool? = nil
+    ) {
+        var payload: [String: Any] = ["type": "settingsUpdate"]
+
+        if let accel = accelerationThreshold {
+            payload["accelerationThreshold"] = accel
+        }
+        if let rot = rotationThreshold {
+            payload["rotationThreshold"] = rot
+        }
+        if let debounce = debounceInterval {
+            payload["gestureDebounceInterval"] = debounce
+        }
+        if let wrist = watchOnRightWrist {
+            payload["watchOnRightWrist"] = wrist
+        }
+
+        // Om Watch är nåbar, skicka direkt för snabb respons
+        if WCSession.default.isReachable {
+            WCSession.default.sendMessage(payload, replyHandler: nil) { error in
+                print("[WatchSession] sendMessage failed, queuing via transferUserInfo: \(error)")
+                // Fallback till transferUserInfo vid fel
+                WCSession.default.transferUserInfo(payload)
+            }
+            print("[WatchSession] Sent settings update via sendMessage")
+        } else {
+            // Köa för leverans när Watch blir tillgänglig
+            WCSession.default.transferUserInfo(payload)
+            print("[WatchSession] Queued settings update via transferUserInfo")
+        }
+    }
 }
 
 // MARK: - WCSessionDelegate

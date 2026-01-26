@@ -264,6 +264,12 @@ extension PresentationManager: WCSessionDelegate {
             return
         }
 
+        // Kolla om det är en inställningsuppdatering
+        if message["type"] as? String == "settingsUpdate" {
+            applySettingsUpdate(message)
+            return
+        }
+
         // Övriga meddelanden (framtida utökning)
         print("[PresentationManager] Received unknown message: \(message)")
     }
@@ -279,6 +285,13 @@ extension PresentationManager: WCSessionDelegate {
             Task { @MainActor in
                 WatchCalibrationCoordinator.shared.handleMessage(calibrationMessage)
             }
+            replyHandler(["ack": true])
+            return
+        }
+
+        // Kolla om det är en inställningsuppdatering
+        if message["type"] as? String == "settingsUpdate" {
+            applySettingsUpdate(message)
             replyHandler(["ack": true])
             return
         }
@@ -333,7 +346,43 @@ extension PresentationManager: WCSessionDelegate {
             return
         }
 
+        // Kolla om det är en inställningsuppdatering (via transferUserInfo)
+        if userInfo["type"] as? String == "settingsUpdate" {
+            applySettingsUpdate(userInfo)
+            return
+        }
+
         print("[PresentationManager] Received unknown userInfo: \(userInfo.keys)")
+    }
+
+    /// Applicerar inställningsuppdatering från Phone på Watch.
+    private nonisolated func applySettingsUpdate(_ payload: [String: Any]) {
+        let defaults = UserDefaults(suiteName: "group.com.kristianniemi.FlickSlides") ?? .standard
+        var updatedKeys: [String] = []
+
+        if let accel = payload["accelerationThreshold"] as? Double {
+            defaults.set(accel, forKey: "accelerationThreshold")
+            updatedKeys.append("accelerationThreshold=\(accel)")
+        }
+        if let rot = payload["rotationThreshold"] as? Double {
+            defaults.set(rot, forKey: "rotationThreshold")
+            updatedKeys.append("rotationThreshold=\(rot)")
+        }
+        if let debounce = payload["gestureDebounceInterval"] as? Double {
+            defaults.set(debounce, forKey: "gestureDebounceInterval")
+            updatedKeys.append("gestureDebounceInterval=\(debounce)")
+        }
+        if let wrist = payload["watchOnRightWrist"] as? Bool {
+            defaults.set(wrist, forKey: "watchOnRightWrist")
+            updatedKeys.append("watchOnRightWrist=\(wrist)")
+        }
+
+        print("[PresentationManager] Settings updated: \(updatedKeys.joined(separator: ", "))")
+
+        // Ladda om konfiguration i GestureDetector
+        Task { @MainActor in
+            self.gestureDetector.reloadConfiguration()
+        }
     }
 }
 
