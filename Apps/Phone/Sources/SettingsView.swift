@@ -1,4 +1,5 @@
 import SwiftUI
+import WatchConnectivity
 
 struct SettingsView: View {
     // MARK: - App Group
@@ -12,6 +13,9 @@ struct SettingsView: View {
         static let rotationThreshold = "rotationThreshold"
         static let gestureDebounceInterval = "gestureDebounceInterval"
         static let watchOnRightWrist = "watchOnRightWrist"
+        static let gestureTemplates = "gestureTemplates"
+        static let useCalibration = "useCalibration"
+        static let saveWorkoutsToHealth = "saveWorkoutsToHealth"
     }
 
     // MARK: - Default Values
@@ -28,6 +32,10 @@ struct SettingsView: View {
     @State private var rotationThreshold: Double
     @State private var debounceInterval: Double
     @State private var watchOnRightWrist: Bool
+    @State private var useCalibration: Bool
+    @State private var hasCalibration: Bool
+    @State private var saveWorkoutsToHealth: Bool
+    @State private var showResetAlert = false
 
     private let defaults: UserDefaults
 
@@ -44,11 +52,17 @@ struct SettingsView: View {
         let debounce = defaults.object(forKey: Keys.gestureDebounceInterval) as? Double
             ?? Defaults.gestureDebounceInterval
         let rightWrist = defaults.object(forKey: Keys.watchOnRightWrist) as? Bool ?? true
+        let hasTemplates = defaults.data(forKey: Keys.gestureTemplates) != nil
+        let useCalib = defaults.object(forKey: Keys.useCalibration) as? Bool ?? true
+        let saveWorkouts = defaults.object(forKey: Keys.saveWorkoutsToHealth) as? Bool ?? false
 
         _accelerationThreshold = State(initialValue: accel)
         _rotationThreshold = State(initialValue: rot)
         _debounceInterval = State(initialValue: debounce)
         _watchOnRightWrist = State(initialValue: rightWrist)
+        _hasCalibration = State(initialValue: hasTemplates)
+        _useCalibration = State(initialValue: useCalib)
+        _saveWorkoutsToHealth = State(initialValue: saveWorkouts)
     }
 
     // MARK: - Body
@@ -68,6 +82,56 @@ struct SettingsView: View {
                 Text("Handled")
             } footer: {
                 Text("Ändringen aktiveras automatiskt inom några sekunder.")
+            }
+
+            Section {
+                HStack {
+                    Text("Personlig kalibrering")
+                    Spacer()
+                    if hasCalibration {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                    } else {
+                        Image(systemName: "circle.dashed")
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                if hasCalibration {
+                    Toggle("Använd kalibrering", isOn: $useCalibration)
+                        .onChange(of: useCalibration) { _, newValue in
+                            defaults.set(newValue, forKey: Keys.useCalibration)
+                            sendCalibrationToggleToWatch(enabled: newValue)
+                        }
+
+                    Button(role: .destructive) {
+                        clearCalibration()
+                    } label: {
+                        HStack {
+                            Image(systemName: "trash")
+                            Text("Rensa kalibrering")
+                        }
+                    }
+                }
+            } header: {
+                Text("Kalibrering")
+            } footer: {
+                if hasCalibration {
+                    Text("Kalibreringen gör att appen känner igen dina personliga gester bättre.")
+                } else {
+                    Text("Ingen kalibrering gjord. Gå till Kalibrering för att träna appen på dina gester.")
+                }
+            }
+
+            Section {
+                Toggle("Spara som träning i Hälsa", isOn: $saveWorkoutsToHealth)
+                    .onChange(of: saveWorkoutsToHealth) { _, newValue in
+                        defaults.set(newValue, forKey: Keys.saveWorkoutsToHealth)
+                    }
+            } header: {
+                Text("Hälsa-appen")
+            } footer: {
+                Text("FlickSlides använder en träningssession för att hålla motion-sensorerna aktiva när skärmen är släckt. Om detta är avstängt sparas ingen data till Hälsa-appen.")
             }
 
             Section {
@@ -140,7 +204,7 @@ struct SettingsView: View {
             }
 
             Section {
-                Button(action: resetToDefaults) {
+                Button(action: { showResetAlert = true }) {
                     HStack {
                         Image(systemName: "arrow.counterclockwise")
                         Text("Återställ till standardvärden")
@@ -162,6 +226,24 @@ struct SettingsView: View {
         }
         .navigationTitle("Inställningar")
         .navigationBarTitleDisplayMode(.inline)
+        .alert("Återställ inställningar", isPresented: $showResetAlert) {
+            Button("Endast trösklar") {
+                resetThresholdsOnly()
+            }
+            if hasCalibration {
+                Button("Trösklar och kalibrering", role: .destructive) {
+                    resetThresholdsOnly()
+                    clearCalibration()
+                }
+            }
+            Button("Avbryt", role: .cancel) { }
+        } message: {
+            if hasCalibration {
+                Text("Vill du bara återställa trösklarna eller även rensa kalibreringen?")
+            } else {
+                Text("Trösklarna återställs till standardvärden.")
+            }
+        }
     }
 
     // MARK: - Save Methods
@@ -178,7 +260,7 @@ struct SettingsView: View {
         defaults.set(debounceInterval, forKey: Keys.gestureDebounceInterval)
     }
 
-    private func resetToDefaults() {
+    private func resetThresholdsOnly() {
         accelerationThreshold = Defaults.accelerationThreshold
         rotationThreshold = Defaults.rotationThreshold
         debounceInterval = Defaults.gestureDebounceInterval
@@ -186,6 +268,23 @@ struct SettingsView: View {
         defaults.set(accelerationThreshold, forKey: Keys.accelerationThreshold)
         defaults.set(rotationThreshold, forKey: Keys.rotationThreshold)
         defaults.set(debounceInterval, forKey: Keys.gestureDebounceInterval)
+    }
+
+    private func clearCalibration() {
+        defaults.removeObject(forKey: Keys.gestureTemplates)
+        hasCalibration = false
+        useCalibration = true  // Reset toggle för nästa kalibrering
+
+        // Meddela Watch att rensa kalibrering
+        if WCSession.default.isReachable {
+            WCSession.default.transferUserInfo(["clearCalibration": true])
+        }
+    }
+
+    private func sendCalibrationToggleToWatch(enabled: Bool) {
+        if WCSession.default.isReachable {
+            WCSession.default.transferUserInfo(["useCalibration": enabled])
+        }
     }
 }
 
