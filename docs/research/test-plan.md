@@ -772,16 +772,47 @@ Dessa tester ska **INTE** trigga någon gest.
      - T3: Slidebyte utfört
    - Konvertera till millisekunder
 
-3. **Formel:**
+3. **Beräkning:**
    ```
-   Latens (ms) = (Frames mellan gest och byte) * (1000 / FPS)
-   Exempel: 30 frames vid 60 fps = 500 ms
+   Latens (ms) = T3 - T1
+   Delsträckor: Watch→Phone (T2-T1), Phone→Mac (T3-T2)
    ```
 
 4. **Mätpunkter:**
    - Mät minst 20 gester
    - Beräkna medelvärde, min, max, standardavvikelse
    - Notera outliers (>750ms)
+
+### 9.1.1 Event-queue med subjektiv upplevelse
+
+För att korrelera objektiv latens med användarupplevelse:
+
+1. **Event-queue:**
+   - Varje steg i kedjan loggar till en gemensam event-queue
+   - Format: `[timestamp_ms] [device] [event_type] [details]`
+   - Exempel:
+     ```
+     1706234567890 WATCH GESTURE_DETECTED flick_next
+     1706234567920 WATCH WC_MESSAGE_SENT cmd=NEXT
+     1706234567985 PHONE WC_MESSAGE_RECEIVED cmd=NEXT
+     1706234568010 PHONE MC_MESSAGE_SENT peer=Mac
+     1706234568095 MAC MC_MESSAGE_RECEIVED cmd=NEXT
+     1706234568120 MAC KEYPRESS_SENT keycode=124
+     ```
+
+2. **Subjektiv bedömning:**
+   - Efter varje gest: testaren anger upplevd respons (1-5)
+     - 1: Omedelbar
+     - 2: Snabb
+     - 3: Acceptabel
+     - 4: Märkbar fördröjning
+     - 5: Frustrerande långsam
+   - Loggas tillsammans med event-queue
+
+3. **Analys:**
+   - Korrelera objektiv latens (ms) med subjektiv bedömning
+   - Identifiera tröskelvärden: vid vilken latens upplever användaren fördröjning?
+   - Hitta flaskhalsar: vilken delsträcka tar längst tid?
 
 ### 9.2 False Positive-räkning
 
