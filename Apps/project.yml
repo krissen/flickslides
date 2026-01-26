@@ -1,0 +1,116 @@
+name: FlickSlides
+options:
+  bundleIdPrefix: com.kristianniemi
+  developmentTeam: 7GYVML3XJG
+  deploymentTarget:
+    iOS: "18.0"
+    macOS: "15.0"
+    watchOS: "11.0"
+  xcodeVersion: "16.0"
+  groupSortPosition: top
+
+packages:
+  FlickSlidesKit:
+    path: ..
+
+targets:
+  # ============================================
+  # watchOS App
+  # ============================================
+  FlickSlidesWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: Watch/Sources
+    info:
+      path: Watch/Info.plist
+      properties:
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: com.kristianniemi.FlickSlides
+        WKRunsIndependentlyOfCompanionApp: true
+        NSHealthShareUsageDescription: "FlickSlides does not access your health data. A workout session is created solely to keep motion sensors active during presentations."
+        NSHealthUpdateUsageDescription: "FlickSlides saves a minimal workout session to enable background gesture detection. No actual workout data is collected."
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kristianniemi.FlickSlides.watchkitapp
+        SWIFT_VERSION: "5.9"
+        DEVELOPMENT_TEAM: 7GYVML3XJG
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
+        CODE_SIGN_ENTITLEMENTS: Watch/FlickSlidesWatch.entitlements
+    dependencies:
+      - package: FlickSlidesKit
+
+  # ============================================
+  # iOS App
+  # ============================================
+  FlickSlidesPhone:
+    type: application
+    platform: iOS
+    sources:
+      - path: Phone/Sources
+    info:
+      path: Phone/Info.plist
+      properties:
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        NSLocalNetworkUsageDescription: "FlickSlides behöver åtkomst till lokalt nätverk för att ansluta till Mac-appen och styra presentationer."
+        NSBonjourServices:
+          - "_flickslides-ctl._tcp"
+    entitlements:
+      path: Phone/FlickSlidesPhone.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kristianniemi.FlickSlides
+        SWIFT_VERSION: "5.9"
+        TARGETED_DEVICE_FAMILY: "1"
+        DEVELOPMENT_TEAM: 7GYVML3XJG
+        CODE_SIGN_STYLE: Automatic
+    dependencies:
+      - package: FlickSlidesKit
+      - target: FlickSlidesWatch
+
+  # ============================================
+  # macOS App
+  # ============================================
+  FlickSlidesMac:
+    type: application
+    platform: macOS
+    sources:
+      - path: Mac/Sources
+    info:
+      path: Mac/Info.plist
+      properties:
+        NSLocalNetworkUsageDescription: "FlickSlides behöver åtkomst till lokalt nätverk för att ta emot kommandon från iPhone-appen."
+        NSBonjourServices:
+          - "_flickslides-ctl._tcp"
+    entitlements:
+      path: Mac/FlickSlidesMac.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kristianniemi.FlickSlidesMac
+        SWIFT_VERSION: "5.9"
+        DEVELOPMENT_TEAM: 7GYVML3XJG
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_HARDENED_RUNTIME: YES
+    dependencies:
+      - package: FlickSlidesKit
+
+schemes:
+  FlickSlides:
+    build:
+      targets:
+        FlickSlidesPhone: all
+        FlickSlidesWatch: all
+        FlickSlidesMac: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release

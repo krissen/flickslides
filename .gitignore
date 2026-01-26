@@ -43,3 +43,9 @@ Carthage/Build/
 *~
 .idea/
 .vscode/
+
+# Xcode user data
+*.xcuserdata/
+xcuserdata/
+*.xcuserdatad/
+DerivedData/

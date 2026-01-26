@@ -2,8 +2,8 @@ import Foundation
 
 /// Konstanter för FlickSlides.
 public enum FlickSlidesConstants {
-    /// Service-typ för MultipeerConnectivity
-    public static let multipeerServiceType = "flickslides-ctrl"  // Max 15 tecken
+    /// Service-typ för MultipeerConnectivity (max 15 tecken, lowercase + hyphen)
+    public static let multipeerServiceType = "flickslides-ctl"  // 15 tecken exakt
 
     /// Bonjour service-typ (alternativ)
     public static let bonjourServiceType = "_flickslides._tcp"
@@ -12,7 +12,7 @@ public enum FlickSlidesConstants {
     public static let gestureDebounceInterval: TimeInterval = 1.0
 
     /// Minimum acceleration för att räknas som gest (g)
-    public static let accelerationThreshold: Double = 0.8
+    public static let accelerationThreshold: Double = 1.5
 
     /// Minimum rotation för handflick (grader)
     public static let rotationThreshold: Double = 18.0
