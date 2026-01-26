@@ -17,8 +17,13 @@ struct SettingsView: View {
                         Button("Aktivera") {
                             AccessibilityManager.openAccessibilitySettings()
                         }
+                        .accessibilityHint("Öppnar systeminställningar för att ge FlickSlides behörighet att simulera tangentbordstryck")
                     }
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(AccessibilityManager.isAccessibilityEnabled
+                    ? "Accessibility-behörighet: aktiverad"
+                    : "Accessibility-behörighet: saknas. Aktivera för att styra presentationer.")
             }
 
             Section("Om") {

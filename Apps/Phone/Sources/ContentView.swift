@@ -20,6 +20,8 @@ struct ContentView: View {
                         Text(watchSession.isWatchReachable ? "Ansluten" : "Ej nåbar")
                             .foregroundColor(.secondary)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Apple Watch: \(watchSession.isWatchReachable ? "ansluten" : "ej nåbar")")
 
                     HStack {
                         Image(systemName: "desktopcomputer")
@@ -29,6 +31,8 @@ struct ContentView: View {
                         Text(macStatusText)
                             .foregroundColor(.secondary)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Mac: \(macStatusText)")
                 }
 
                 // Mac-val
@@ -97,6 +101,8 @@ struct ContentView: View {
                         }
                         .buttonStyle(.borderless)
                         .disabled(macConnection.connectedMac == nil)
+                        .accessibilityLabel("Föregående slide")
+                        .accessibilityHint("Gå till föregående slide i presentationen")
 
                         Spacer()
 
@@ -107,6 +113,8 @@ struct ContentView: View {
                         .buttonStyle(.borderless)
                         .disabled(macConnection.connectedMac == nil)
                         .tint(.orange)
+                        .accessibilityLabel("Svart skärm")
+                        .accessibilityHint("Växla svart skärm i presentationen")
 
                         Spacer()
 
@@ -116,6 +124,8 @@ struct ContentView: View {
                         }
                         .buttonStyle(.borderless)
                         .disabled(macConnection.connectedMac == nil)
+                        .accessibilityLabel("Nästa slide")
+                        .accessibilityHint("Gå till nästa slide i presentationen")
                     }
                     .padding(.vertical)
                 }
@@ -153,9 +163,16 @@ struct ContentView: View {
                                 Text(log.command)
                                     .font(.system(.body, design: .monospaced))
                                 Spacer()
+                                if let latencyMs = log.latencyMs {
+                                    Text("\(latencyMs)ms")
+                                        .font(.caption)
+                                        .foregroundColor(latencyMs < 500 ? .green : .orange)
+                                }
                                 Text(log.status)
                                     .font(.caption)
                             }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("\(log.command): \(log.status)\(log.latencyMs.map { ", latens \($0) millisekunder" } ?? "")")
                         }
                     }
                 }
@@ -166,11 +183,13 @@ struct ContentView: View {
                     NavigationLink(destination: SettingsView()) {
                         Image(systemName: "gearshape")
                     }
+                    .accessibilityLabel("Inställningar")
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: toggleConnection) {
                         Image(systemName: macConnection.connectedMac != nil ? "wifi.slash" : "wifi")
                     }
+                    .accessibilityLabel(macConnection.connectedMac != nil ? "Koppla från Mac" : "Sök efter Mac")
                 }
             }
         }

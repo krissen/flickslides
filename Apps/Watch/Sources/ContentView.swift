@@ -30,6 +30,8 @@ struct ContentView: View {
                         Image(systemName: "gearshape")
                             .font(.caption)
                     }
+                    .accessibilityLabel("Inställningar")
+                    .accessibilityHint("Öppna kalibrering och inställningar")
                 }
             }
         }
@@ -54,6 +56,13 @@ struct ContentView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(statusAccessibilityLabel)
+    }
+
+    private var statusAccessibilityLabel: String {
+        let modeStatus = presentationManager.isPresentationMode ? "Presentationsläge aktivt" : "Presentationsläge inaktivt"
+        return "\(modeStatus). \(presentationManager.connectionState)"
     }
 
     // MARK: - Main Button
@@ -94,6 +103,24 @@ struct ContentView: View {
         }
         .buttonStyle(.plain)
         .disabled(presentationManager.isTransitioning)
+        .accessibilityLabel(mainButtonAccessibilityLabel)
+        .accessibilityHint(mainButtonAccessibilityHint)
+    }
+
+    private var mainButtonAccessibilityLabel: String {
+        if presentationManager.isTransitioning {
+            return presentationManager.isPresentationMode ? "Stoppar presentation" : "Startar presentation"
+        }
+        return presentationManager.isPresentationMode ? "Stoppa presentation" : "Starta presentation"
+    }
+
+    private var mainButtonAccessibilityHint: String {
+        if presentationManager.isTransitioning {
+            return "Vänta medan läget ändras"
+        }
+        return presentationManager.isPresentationMode
+            ? "Dubbelklicka för att avsluta presentationsläge"
+            : "Dubbelklicka för att aktivera gestdetektering"
     }
 
     private var buttonText: String {
@@ -124,6 +151,8 @@ struct ContentView: View {
                     .frame(width: 44, height: 36)
             }
             .buttonStyle(.bordered)
+            .accessibilityLabel("Föregående slide")
+            .accessibilityHint("Dubbelklicka för att gå till föregående slide")
 
             Button {
                 sendFallbackCommand("NEXT")
@@ -134,6 +163,8 @@ struct ContentView: View {
                     .frame(width: 44, height: 36)
             }
             .buttonStyle(.bordered)
+            .accessibilityLabel("Nästa slide")
+            .accessibilityHint("Dubbelklicka för att gå till nästa slide")
         }
     }
 
