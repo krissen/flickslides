@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreMotion
 import WatchKit
+import FlickSlidesKit
 
 /// Kalibreringsvy för personaliserad gestinlärning.
 ///
@@ -16,9 +17,9 @@ struct CalibrationView: View {
             case .intro:
                 introView
             case .collectingForward:
-                collectingView(label: "Nasta", count: viewModel.forwardCount, target: viewModel.targetCount)
+                collectingView(label: "Nästa", count: viewModel.forwardCount, target: viewModel.targetCount)
             case .collectingBackward:
-                collectingView(label: "Foregaende", count: viewModel.backwardCount, target: viewModel.targetCount)
+                collectingView(label: "Föregående", count: viewModel.backwardCount, target: viewModel.targetCount)
             case .collectingNegative:
                 negativeView
             case .complete:
@@ -34,7 +35,7 @@ struct CalibrationView: View {
             Text("Kalibrering")
                 .font(.headline)
 
-            Text("Lar appen dina gester for battre precision.")
+            Text("Lär appen dina gester för bättre precision.")
                 .font(.caption)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
@@ -62,7 +63,7 @@ struct CalibrationView: View {
             ProgressView(value: Double(count), total: Double(target))
                 .tint(.green)
 
-            Text("Gor '\(label)'-gesten")
+            Text("Gör '\(label)'-gesten")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -143,7 +144,7 @@ final class CalibrationViewModel: ObservableObject {
     @Published var backwardCount = 0
     @Published var negativeCount = 0
     @Published var isRecording = false
-    @Published var negativePrompt = "Ror dig naturligt"
+    @Published var negativePrompt = "Rör dig naturligt"
 
     // MARK: - Configuration
 
@@ -158,21 +159,21 @@ final class CalibrationViewModel: ObservableObject {
 
     private let motionManager = CMMotionManager()
     private let store = GestureTemplateStore()
-    private var templates: [DTWMatcher.GestureTemplate] = []
-    private var currentSamples: [DTWMatcher.MotionSample] = []
+    private var templates: [GestureTemplate] = []
+    private var currentSamples: [MotionSample] = []
     private var gestureStartTime: Date?
-    private var currentLabel: DTWMatcher.GestureLabel = .flickForward
+    private var currentLabel: GestureLabel = .flickForward
 
     private let negativePrompts = [
         "Lyft armen",
-        "Sank armen",
+        "Sänk armen",
         "Vifta handen",
-        "Titta pa klockan",
+        "Titta på klockan",
         "Korsa armarna",
         "Gestikulera",
         "Skaka handen",
-        "Peka framat",
-        "Klappa handerna",
+        "Peka framåt",
+        "Klappa händerna",
         "Justera klockan"
     ]
     private var promptIndex = 0
@@ -225,7 +226,7 @@ final class CalibrationViewModel: ObservableObject {
 
         // Samla samples under gest
         if isRecording, let startTime = gestureStartTime {
-            let sample = DTWMatcher.MotionSample(
+            let sample = MotionSample(
                 timestamp: Date().timeIntervalSince(startTime),
                 accX: acc.x,
                 accY: acc.y,
@@ -252,7 +253,7 @@ final class CalibrationViewModel: ObservableObject {
             return
         }
 
-        let template = DTWMatcher.GestureTemplate(
+        let template = GestureTemplate(
             label: currentLabel,
             samples: currentSamples
         )
