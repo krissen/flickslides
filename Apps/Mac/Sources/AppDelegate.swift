@@ -16,10 +16,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        // 2. Skapa menyradsikon
+        // 2. Begär notifikationsbehörighet
+        ConnectionManager.requestNotificationPermission()
+
+        // 3. Skapa menyradsikon
         statusBarController = StatusBarController(connectionManager: connectionManager)
 
-        // 3. Börja annonsera för iOS-anslutningar
+        // 4. Börja annonsera för iOS-anslutningar
         connectionManager.startAdvertising()
 
         print("[AppDelegate] Application launched")
