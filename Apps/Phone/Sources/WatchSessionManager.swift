@@ -171,20 +171,33 @@ extension WatchSessionManager: WCSessionDelegate {
         }
 
         let receiveTimestamp = Date()
+        let gestureTimestamp = message["gestureTimestamp"] as? TimeInterval
+
+        // Logga Watch→Phone latens
+        if let gestureTs = gestureTimestamp {
+            let watchToPhoneMs = (receiveTimestamp.timeIntervalSince1970 - gestureTs) * 1000
+            print("[WatchSession] Watch→Phone latency: \(String(format: "%.0f", watchToPhoneMs))ms")
+        }
 
         DispatchQueue.main.async {
             self.lastCommand = command
             self.lastCommandTimestamp = receiveTimestamp
         }
 
-        // Vidarebefordra till Mac
-        BridgeCoordinator.shared.forwardToMac(command: command, timestamp: receiveTimestamp)
-
-        // Bekräfta till Watch
-        replyHandler([
-            "ack": command,
-            "timestamp": receiveTimestamp.timeIntervalSince1970
-        ])
+        // Vidarebefordra till Mac med original gestureTimestamp
+        BridgeCoordinator.shared.forwardToMac(
+            command: command,
+            timestamp: receiveTimestamp,
+            gestureTimestamp: gestureTimestamp,
+            replyHandler: { executedTimestamp in
+                // Skicka tillbaka executedTimestamp till Watch
+                replyHandler([
+                    "ack": command,
+                    "timestamp": receiveTimestamp.timeIntervalSince1970,
+                    "executedTimestamp": executedTimestamp
+                ])
+            }
+        )
 
         print("[WatchSession] Received with reply: \(command)")
     }

@@ -204,12 +204,24 @@ final class PresentationManager: NSObject, ObservableObject {
             return
         }
 
-        let message = ["command": command]
+        // Inkludera tidsstämpel för latensloggning
+        let gestureTimestamp = Date().timeIntervalSince1970
+        let message: [String: Any] = [
+            "command": command,
+            "gestureTimestamp": gestureTimestamp
+        ]
 
         WCSession.default.sendMessage(message, replyHandler: { reply in
             Task { @MainActor in
                 self.lastCommand = command
-                print("[PresentationManager] Command \(command) acknowledged")
+
+                // Logga latens om Mac rapporterar tillbaka
+                if let endTimestamp = reply["executedTimestamp"] as? TimeInterval {
+                    let latencyMs = (endTimestamp - gestureTimestamp) * 1000
+                    print("[PresentationManager] Command \(command) - end-to-end latency: \(String(format: "%.0f", latencyMs))ms")
+                } else {
+                    print("[PresentationManager] Command \(command) acknowledged")
+                }
             }
         }, errorHandler: { error in
             Task { @MainActor in
