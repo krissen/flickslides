@@ -1,5 +1,6 @@
 import Foundation
 import FlickSlidesKit
+import WatchConnectivity
 
 /// Orkestrerar kalibrering av gester från Phone-sidan.
 ///
@@ -61,14 +62,14 @@ final class PhoneCalibrationManager: ObservableObject {
     private let negativePrompts = [
         "LYFT armen rakt upp och ner igen",
         "VRID handleden fram och tillbaka",
-        "PEKA framat med fingret",
-        "TITTA pa klockan (lyft armen till ansiktet)",
+        "PEKA framåt med fingret",
+        "TITTA på klockan (lyft armen till ansiktet)",
         "VIFTA handen fram och tillbaka",
-        "SKAKA handen latt",
-        "GOR en cirkelrorelse med handen",
+        "SKAKA handen lätt",
+        "GÖR en cirkelrörelse med handen",
         "LYFT handen till axeln",
-        "LATSAS klappa nagon pa axeln",
-        "STRYK dig over pannan"
+        "LÅTSAS klappa någon på axeln",
+        "STRYK dig över pannan"
     ]
 
     // MARK: - Initialization
@@ -103,15 +104,15 @@ final class PhoneCalibrationManager: ObservableObject {
         await waitForWatch()
 
         guard isWatchReady else {
-            phase = .error(message: "Watch ej tillganglig")
+            phase = .error(message: "Watch ej tillgänglig")
             return
         }
 
         // Samla Forward-gester
-        await collectGestureType(.flickForward, prompt: "Gor en NASTA-gest (flikca framat)")
+        await collectGestureType(.flickForward, prompt: "Gör en NÄSTA-gest (flicka framåt)")
 
         // Samla Backward-gester
-        await collectGestureType(.flickBackward, prompt: "Gor en FOREGAENDE-gest (flikca bakat)")
+        await collectGestureType(.flickBackward, prompt: "Gör en FÖREGÅENDE-gest (flicka bakåt)")
 
         // Samla Negativa samples
         await collectNegativeSamples()
@@ -153,6 +154,13 @@ final class PhoneCalibrationManager: ObservableObject {
 
         case .watchDismissed:
             isWatchReady = false
+            isRecordingInProgress = false
+            isWaitingForIdle = false
+            isReadyForGesture = false
+            // Avbryt pågående continuations
+            resumeRecordingContinuation(with: nil)
+            readyForGestureContinuation?.resume()
+            readyForGestureContinuation = nil
             if case .idle = phase {} else {
                 phase = .error(message: "Watch avslutade kalibrering")
             }
@@ -182,7 +190,7 @@ final class PhoneCalibrationManager: ObservableObject {
             // Vi försöker igen automatiskt
 
         // Meddelanden som Phone skickar
-        case .startRecording, .stopRecording, .calibrationAborted, .ping:
+        case .startRecording, .stopRecording, .calibrationAborted, .calibrationComplete, .ping:
             break
         }
     }
@@ -247,56 +255,50 @@ final class PhoneCalibrationManager: ObservableObject {
     }
 
     private func collectNegativeSamples() async {
-        var collected: [MotionSampleBatch] = []
-        var promptIndex = 0
-        var samplesPerPrompt = [String: Int]()  // Spåra hur många samples per prompt-typ
+        var allSamples: [MotionSampleBatch] = []
+        var samplesPerPrompt = [String: Int]()
 
-        // Initiera räknarna
-        for prompt in negativePrompts {
+        // Samla exakt 5 samples per typ, INGEN outlier-detektion
+        // (negativa samples SKA vara olika varandra)
+        for (promptIndex, prompt) in negativePrompts.enumerated() {
             samplesPerPrompt[prompt] = 0
-        }
 
-        while collected.count < Config.negativeSamplesTarget {
-            // Hitta nästa prompt som behöver fler samples (rotation)
-            var currentPrompt: String?
-            var attempts = 0
+            for sampleNum in 0..<Config.samplesPerNegativeType {
+                let totalCollected = allSamples.count
+                self.currentPrompt = "\(prompt)\n(\(sampleNum + 1)/\(Config.samplesPerNegativeType) av typ \(promptIndex + 1)/\(negativePrompts.count))"
 
-            repeat {
-                currentPrompt = negativePrompts[promptIndex % negativePrompts.count]
-                promptIndex += 1
-                attempts += 1
-            } while (samplesPerPrompt[currentPrompt!] ?? 0) >= Config.samplesPerNegativeType && attempts < negativePrompts.count
+                phase = .collectingNegative(
+                    collected: totalCollected,
+                    target: Config.negativeSamplesTarget
+                )
 
-            guard let prompt = currentPrompt, (samplesPerPrompt[prompt] ?? 0) < Config.samplesPerNegativeType else {
-                break  // Alla prompts har nått sitt mål
+                // Försök tills vi får ett sample (max 5 försök)
+                var attempts = 0
+                while attempts < 5 {
+                    if let batch = await recordSingleSample(
+                        gestureType: .negative,
+                        index: totalCollected
+                    ) {
+                        allSamples.append(batch)
+                        samplesPerPrompt[prompt, default: 0] += 1
+                        break
+                    }
+                    attempts += 1
+                    print("[PhoneCalibrationManager] Negative sample failed, attempt \(attempts)/5")
+                }
             }
 
-            self.currentPrompt = prompt
-
-            phase = .collectingNegative(
-                collected: collected.count,
-                target: Config.negativeSamplesTarget
-            )
-
-            if let batch = await recordSingleSample(
-                gestureType: .negative,
-                index: collected.count
-            ) {
-                collected.append(batch)
-                samplesPerPrompt[prompt, default: 0] += 1
-            }
+            print("[PhoneCalibrationManager] \(prompt): \(samplesPerPrompt[prompt] ?? 0) samples")
         }
 
-        // Analysera negativa (mindre strikt)
-        let analysis = outlierDetector.analyze(collected)
-        negativeSamples = analysis.kept
+        negativeSamples = allSamples
 
-        // Skriv ut statistik per prompt-typ
+        // Skriv ut statistik
         print("[PhoneCalibrationManager] Negative samples per type:")
         for prompt in negativePrompts {
             print("  - \(prompt): \(samplesPerPrompt[prompt] ?? 0) samples")
         }
-        print("[PhoneCalibrationManager] Negative: keeping \(negativeSamples.count) of \(collected.count) samples")
+        print("[PhoneCalibrationManager] Negative: total \(negativeSamples.count) samples (no outlier detection)")
     }
 
     private func collectBatch(
@@ -319,10 +321,9 @@ final class PhoneCalibrationManager: ObservableObject {
     }
 
     private func recordSingleSample(gestureType: GestureLabel, index: Int) async -> MotionSampleBatch? {
-        // Vänta på att Watch är klar med föregående inspelning innan vi startar en ny
-        // Detta förhindrar race condition där Phone skickar startRecording innan Watch är redo
+        // 1. Vänta på att föregående inspelning är helt klar
         var waitAttempts = 0
-        let maxWaitAttempts = 100 // 10 sekunder max (100ms per försök)
+        let maxWaitAttempts = 100 // 10 sekunder max
 
         while isRecordingInProgress && waitAttempts < maxWaitAttempts {
             try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
@@ -330,18 +331,40 @@ final class PhoneCalibrationManager: ObservableObject {
         }
 
         if isRecordingInProgress {
-            print("[PhoneCalibrationManager] Watch still recording after timeout, aborting sample \(gestureType) #\(index)")
-            return nil
+            print("[PhoneCalibrationManager] Watch still recording, waiting more...")
+            // Skicka stopRecording för att tvinga Watch att avsluta
+            watchSession.sendCalibrationMessage(.stopRecording)
+            try? await Task.sleep(nanoseconds: 500_000_000) // 500ms
+            isRecordingInProgress = false
         }
 
-        // Skicka startkommando till Watch
+        // 2. Kort paus så användaren hinner se prompten
+        try? await Task.sleep(nanoseconds: 500_000_000) // 500ms
+
+        // 3. Skicka startkommando till Watch
+        print("[PhoneCalibrationManager] Starting recording for \(gestureType) #\(index)")
         watchSession.sendCalibrationMessage(.startRecording(gestureType: gestureType, sampleIndex: index))
 
-        // Vänta på svar med timeout
+        // 4. Vänta på readyForGesture (Watch detekterar att armen är vilande)
+        var readyWaitAttempts = 0
+        let maxReadyWaitAttempts = 150 // 15 sekunder för idle-detektion
+
+        while !isReadyForGesture && isRecordingInProgress && readyWaitAttempts < maxReadyWaitAttempts {
+            try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+            readyWaitAttempts += 1
+        }
+
+        if !isReadyForGesture && isRecordingInProgress {
+            print("[PhoneCalibrationManager] Timeout waiting for idle, continuing anyway for \(gestureType) #\(index)")
+        } else if isReadyForGesture {
+            print("[PhoneCalibrationManager] User ready for gesture \(gestureType) #\(index)")
+        }
+
+        // 5. Vänta på sampleRecorded
         return await withCheckedContinuation { continuation in
             currentRecordingContinuation = continuation
 
-            // Timeout
+            // Timeout för själva gesten (efter idle)
             Task {
                 try? await Task.sleep(nanoseconds: UInt64(Config.recordingTimeoutSeconds * 1_000_000_000))
                 if currentRecordingContinuation != nil {
@@ -393,8 +416,21 @@ final class PhoneCalibrationManager: ObservableObject {
             label: .negative
         ))
 
-        // Spara till App Group
+        // Spara till App Group (lokal backup)
         templateStore.save(templates)
+
+        // Överför mallar till Watch via WCSession
+        // (App Group fungerar inte mellan iPhone och Watch - de är separata enheter)
+        do {
+            let data = try JSONEncoder().encode(templates)
+            WCSession.default.transferUserInfo(["gestureTemplates": data])
+            print("[PhoneCalibrationManager] Transferred \(templates.count) templates to Watch")
+        } catch {
+            print("[PhoneCalibrationManager] Failed to encode templates for transfer: \(error)")
+        }
+
+        // Meddela Watch att kalibreringen är klar
+        watchSession.sendCalibrationMessage(.calibrationComplete)
 
         // Visa statistik
         let stats = CalibrationStats(

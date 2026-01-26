@@ -1,5 +1,6 @@
 import Foundation
 import WatchConnectivity
+import FlickSlidesKit
 
 /// Hanterar WCSession-kommunikation med Apple Watch.
 final class WatchSessionManager: NSObject, ObservableObject {
@@ -9,11 +10,46 @@ final class WatchSessionManager: NSObject, ObservableObject {
     @Published var lastCommand: String?
     @Published var lastCommandTimestamp: Date?
 
+    // MARK: - Calibration
+
+    /// Callback för kalibreringsmeddelanden från Watch.
+    var onCalibrationMessage: ((CalibrationMessage) -> Void)?
+
     private override init() {
         super.init()
         if WCSession.isSupported() {
             WCSession.default.delegate = self
             WCSession.default.activate()
+        }
+    }
+
+    // MARK: - Send to Watch
+
+    /// Skickar ett kalibreringsmeddelande till Watch.
+    func sendCalibrationMessage(_ message: CalibrationMessage, completion: ((Error?) -> Void)? = nil) {
+        guard WCSession.default.isReachable else {
+            completion?(WatchSessionError.watchNotReachable)
+            return
+        }
+
+        let dict = message.toDictionary()
+
+        WCSession.default.sendMessage(dict, replyHandler: { _ in
+            completion?(nil)
+        }, errorHandler: { error in
+            print("[WatchSession] Failed to send calibration message: \(error)")
+            completion?(error)
+        })
+    }
+
+    enum WatchSessionError: Error, LocalizedError {
+        case watchNotReachable
+
+        var errorDescription: String? {
+            switch self {
+            case .watchNotReachable:
+                return "Watch ej nåbar"
+            }
         }
     }
 }
@@ -51,6 +87,16 @@ extension WatchSessionManager: WCSessionDelegate {
     /// Tar emot meddelanden från Watch (realtid)
     func session(_ session: WCSession,
                  didReceiveMessage message: [String: Any]) {
+        // Kolla om det är ett kalibreringsmeddelande
+        if let calibrationMessage = CalibrationMessage.fromDictionary(message) {
+            DispatchQueue.main.async {
+                self.onCalibrationMessage?(calibrationMessage)
+            }
+            print("[WatchSession] Received calibration message: \(calibrationMessage)")
+            return
+        }
+
+        // Presentation command
         guard let command = message["command"] as? String else { return }
 
         let timestamp = Date()
@@ -68,6 +114,17 @@ extension WatchSessionManager: WCSessionDelegate {
     func session(_ session: WCSession,
                  didReceiveMessage message: [String: Any],
                  replyHandler: @escaping ([String: Any]) -> Void) {
+        // Kolla om det är ett kalibreringsmeddelande
+        if let calibrationMessage = CalibrationMessage.fromDictionary(message) {
+            DispatchQueue.main.async {
+                self.onCalibrationMessage?(calibrationMessage)
+            }
+            replyHandler(["ack": true])
+            print("[WatchSession] Received calibration message with reply: \(calibrationMessage)")
+            return
+        }
+
+        // Presentation command
         guard let command = message["command"] as? String else {
             replyHandler(["error": "Invalid command"])
             return

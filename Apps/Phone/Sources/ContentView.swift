@@ -5,6 +5,7 @@ struct ContentView: View {
     @StateObject private var watchSession = WatchSessionManager.shared
     @StateObject private var macConnection = MacConnectionManager.shared
     @StateObject private var coordinator = BridgeCoordinator.shared
+    @State private var showCalibration = false
 
     var body: some View {
         NavigationStack {
@@ -119,6 +120,28 @@ struct ContentView: View {
                     .padding(.vertical)
                 }
 
+                // Kalibrering
+                Section("Gestkalibrering") {
+                    Button {
+                        showCalibration = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "hand.wave.fill")
+                                .foregroundColor(.blue)
+                            VStack(alignment: .leading) {
+                                Text("Kalibrera gester")
+                                Text("Anpassa gestdetektering")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .disabled(!watchSession.isWatchReachable)
+                }
+
                 // Kommandologg
                 Section("Senaste kommandon") {
                     if coordinator.commandLog.isEmpty {
@@ -153,6 +176,9 @@ struct ContentView: View {
         }
         .onAppear {
             macConnection.startBrowsing()
+        }
+        .sheet(isPresented: $showCalibration) {
+            PhoneCalibrationView()
         }
     }
 
