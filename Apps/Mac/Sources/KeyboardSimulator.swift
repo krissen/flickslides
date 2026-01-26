@@ -33,8 +33,8 @@ final class KeyboardSimulator {
             return false
         }
 
-        // Använd activate(options:) för att tvinga aktivering från bakgrund
-        let success = app.activate(options: [.activateIgnoringOtherApps])
+        // Använd activate() för att aktivera appen
+        let success = app.activate()
         if success {
             print("[KeyboardSimulator] Activated app: \(app.localizedName ?? bundleId)")
             // Ge appen tid att komma till förgrunden (non-blocking)

@@ -32,7 +32,9 @@ final class GestureDetector: ObservableObject {
 
     private enum UserDefaultsKeys {
         static let accelerationThreshold = "accelerationThreshold"
-        static let rotationThreshold = "rotationThreshold"
+        static let rotationThreshold = "rotationThreshold"  // Legacy
+        static let rotationThresholdForward = "rotationThresholdForward"
+        static let rotationThresholdBackward = "rotationThresholdBackward"
         static let gestureDebounceInterval = "gestureDebounceInterval"
         static let watchOnRightWrist = "watchOnRightWrist"
     }
@@ -43,6 +45,8 @@ final class GestureDetector: ObservableObject {
         case idle
         case initiated(startTime: Date, direction: GestureDirection)
         case peaked(startTime: Date, direction: GestureDirection, peakAcceleration: Double)
+        /// Landing-fas: väntar på att rörelsen ska "landa" (acceleration och rotation avtar)
+        case landing(startTime: Date, direction: GestureDirection, peakAcceleration: Double, peakTime: Date)
 
         var description: String {
             switch self {
@@ -52,11 +56,13 @@ final class GestureDetector: ObservableObject {
                 return "initiated(\(direction))"
             case .peaked(_, let direction, let peak):
                 return "peaked(\(direction), peak=\(String(format: "%.2f", peak))g)"
+            case .landing(_, let direction, let peak, _):
+                return "landing(\(direction), peak=\(String(format: "%.2f", peak))g)"
             }
         }
     }
 
-    private enum GestureDirection {
+    fileprivate enum GestureDirection {
         case forward   // NEXT - pronation (positiv rot.x)
         case backward  // PREV - supination (negativ rot.x)
     }
@@ -74,8 +80,11 @@ final class GestureDetector: ObservableObject {
         /// Minimum acceleration för att räknas som gest (g)
         var accelerationThreshold: Double
 
-        /// Minimum rotation för handflick (grader/sekund)
-        var rotationThreshold: Double
+        /// Minimum rotation för FRAMÅT/NEXT - pronation (grader/sekund)
+        var rotationThresholdForward: Double
+
+        /// Minimum rotation för BAKÅT/PREV - supination (grader/sekund)
+        var rotationThresholdBackward: Double
 
         /// Cooldown mellan gester (sekunder)
         var debounceInterval: TimeInterval
@@ -89,21 +98,38 @@ final class GestureDetector: ObservableObject {
         /// Max tid för en gest från initiation till completion (sekunder)
         var gestureTimeout: TimeInterval
 
+        /// Legacy: returnerar forward-tröskeln för bakåtkompatibilitet
+        var rotationThreshold: Double { rotationThresholdForward }
+
+        /// Returnerar rätt rotationströskel baserat på riktning (privat pga GestureDirection)
+        fileprivate func rotationThreshold(for direction: GestureDirection) -> Double {
+            switch direction {
+            case .forward: return rotationThresholdForward
+            case .backward: return rotationThresholdBackward
+            }
+        }
+
         /// Skapar konfiguration med värden från UserDefaults (med app group för delning med iPhone)
         static func fromUserDefaults() -> Configuration {
             let defaults = UserDefaults(suiteName: "group.com.kristianniemi.FlickSlides") ?? .standard
 
             let accelThreshold = defaults.object(forKey: UserDefaultsKeys.accelerationThreshold) as? Double
                 ?? C.accelerationThreshold
-            let rotThreshold = defaults.object(forKey: UserDefaultsKeys.rotationThreshold) as? Double
-                ?? C.rotationThreshold
+
+            // Nya separata rotationströsklar
+            let rotForward = defaults.object(forKey: UserDefaultsKeys.rotationThresholdForward) as? Double
+                ?? C.rotationThresholdForward
+            let rotBackward = defaults.object(forKey: UserDefaultsKeys.rotationThresholdBackward) as? Double
+                ?? C.rotationThresholdBackward
+
             let debounce = defaults.object(forKey: UserDefaultsKeys.gestureDebounceInterval) as? Double
                 ?? C.gestureDebounceInterval
             let rightWrist = defaults.object(forKey: UserDefaultsKeys.watchOnRightWrist) as? Bool ?? true
 
             return Configuration(
                 accelerationThreshold: accelThreshold,
-                rotationThreshold: rotThreshold,
+                rotationThresholdForward: rotForward,
+                rotationThresholdBackward: rotBackward,
                 debounceInterval: debounce,
                 samplingRate: C.sensorSamplingRate,
                 watchOnRightWrist: rightWrist,
@@ -139,6 +165,15 @@ final class GestureDetector: ObservableObject {
     private var recentAccelerations: [Double] = []
     private var maxAccelerationInGesture: Double = 0
     private let peakWindowSize = 10
+
+    // Kumulativ rotation för att verifiera att handleden faktiskt vrids
+    private var cumulativeRotation: Double = 0
+    private var lastSampleTime: Date?
+
+    // Landing-detektion för DTW
+    private var dtwPeakAcceleration: Double = 0
+    private var dtwPeakTime: Date?
+    private var dtwHasReachedPeak: Bool = false
 
     // DTW-baserad gestmatchning
     private let dtwMatcher = DTWMatcher()
@@ -223,7 +258,7 @@ final class GestureDetector: ObservableObject {
             return
         }
         configuration = Configuration.fromUserDefaults()
-        log("Configuration reloaded: accel=\(configuration.accelerationThreshold)g, rot=\(configuration.rotationThreshold)°/s, debounce=\(configuration.debounceInterval)s, wrist=\(configuration.watchOnRightWrist ? "right" : "left")")
+        log("Configuration reloaded: accel=\(configuration.accelerationThreshold)g, rotFwd=\(configuration.rotationThresholdForward)°/s, rotBwd=\(configuration.rotationThresholdBackward)°/s, debounce=\(configuration.debounceInterval)s, wrist=\(configuration.watchOnRightWrist ? "right" : "left")")
     }
 
     // MARK: - Motion Processing
@@ -269,7 +304,7 @@ final class GestureDetector: ObservableObject {
         if useDTWStrategy {
             // DTW-strategi: samla samples och matcha
             collectDTWSample(now: now, acc: acc, rot: rot, effectiveRotX: effectiveRotX)
-            processDTWStrategy(now: now, accMagnitude: accMagnitude)
+            processDTWStrategy(now: now, accMagnitude: accMagnitude, rotationRate: currentRotationRate)
         } else {
             // Tröskelbaserad strategi: state machine
             processStateMachine(
@@ -284,14 +319,29 @@ final class GestureDetector: ObservableObject {
 
     // MARK: - Gesture Start Detection (Unified Trigger)
 
+    /// Kontrollerar om rotation är isolerad till X-axeln (pronation/supination).
+    /// En äkta bladvänd-gest har handledsrotation, inte multiaxiell armrörelse.
+    private func isRotationIsolated(rot: CMRotationRate) -> Bool {
+        let rotXAbs = abs(rot.x) * 180.0 / .pi
+        let rotYAbs = abs(rot.y) * 180.0 / .pi
+        let rotZAbs = abs(rot.z) * 180.0 / .pi
+        let totalRotation = rotXAbs + rotYAbs + rotZAbs
+
+        guard totalRotation > 10.0 else { return false }  // Minst 10°/s total
+
+        let xDominance = rotXAbs / totalRotation
+        return xDominance >= C.rotationIsolationThreshold
+    }
+
     /// Avgör om en gest ska initieras baserat på sensordata.
     /// Används av BÅDE DTW och tröskelbaserad strategi för konsekvent beteende.
     ///
     /// Krav för att starta gest:
     /// - X-acceleration dominerar (sidledrörelse)
     /// - X-acceleration > 0.5g
-    /// - Rotation i pronation/supination-axeln > 10°/s
-    private func shouldStartGesture(acc: CMAcceleration, effectiveRotX: Double) -> Bool {
+    /// - Rotation i pronation/supination-axeln > initiationRotationThreshold
+    /// - Rotation är isolerad till X-axeln (dominans > rotationIsolationThreshold)
+    private func shouldStartGesture(acc: CMAcceleration, rot: CMRotationRate, effectiveRotX: Double) -> Bool {
         let absX = abs(acc.x)
         let absY = abs(acc.y)
         let absZ = abs(acc.z)
@@ -304,10 +354,20 @@ final class GestureDetector: ObservableObject {
             return false
         }
 
-        // Rotation måste ha påbörjats
+        // Rotation måste ha påbörjats med tillräcklig styrka
         let rotationStarted = abs(effectiveRotX) > C.initiationRotationThreshold
+        guard rotationStarted else {
+            return false
+        }
 
-        return rotationStarted
+        // NY: Rotation måste vara isolerad till X-axeln (pronation/supination)
+        // Detta filtrerar bort multiaxiella rörelser som gestikulerande
+        guard isRotationIsolated(rot: rot) else {
+            logDiagnostic("Rejected start: rotation not isolated (rotX=\(String(format: "%.1f", abs(effectiveRotX)))°/s)")
+            return false
+        }
+
+        return true
     }
 
     // MARK: - DTW Sample Collection
@@ -322,7 +382,7 @@ final class GestureDetector: ObservableObject {
         }
 
         // Starta sampling med samma trigger som state machine
-        if dtwGestureStartTime == nil && shouldStartGesture(acc: acc, effectiveRotX: effectiveRotX) {
+        if dtwGestureStartTime == nil && shouldStartGesture(acc: acc, rot: rot, effectiveRotX: effectiveRotX) {
             // Använd första sample i pre-buffern som startpunkt
             let actualStartTime = dtwPreBuffer.first?.0 ?? now
             dtwGestureStartTime = actualStartTime
@@ -383,26 +443,82 @@ final class GestureDetector: ObservableObject {
         dtwGestureStartTime = nil
         dtwSamples.removeAll()
         dtwPreBuffer.removeAll()
+        // Reset landing-detektion
+        dtwPeakAcceleration = 0
+        dtwPeakTime = nil
+        dtwHasReachedPeak = false
     }
 
     // MARK: - DTW Strategy
 
-    /// Processar DTW-strategin (endast anropas när useDTWStrategy == true)
-    private func processDTWStrategy(now: Date, accMagnitude: Double) {
+    /// Processar DTW-strategin med landing-detektion.
+    ///
+    /// Landing-kriterier (alla måste uppfyllas):
+    /// 1. Acceleration har nått peak och sjunkit minst 50%
+    /// 2. Rotation har saktat ner (< 30°/s)
+    /// 3. Minst 150ms har passerat sedan peak
+    /// 4. DTW-match confidence >= threshold
+    private func processDTWStrategy(now: Date, accMagnitude: Double, rotationRate: Double) {
         guard let startTime = dtwGestureStartTime else { return }
 
         let elapsed = now.timeIntervalSince(startTime)
-        let samplingComplete = elapsed > 1.0 || (elapsed > 0.15 && accMagnitude < 0.2)
 
-        guard samplingComplete else { return }
+        // Timeout - avbryt om gesten tar för lång tid
+        if elapsed > 1.5 {
+            log("DTW: timeout after \(String(format: "%.0f", elapsed * 1000))ms")
+            resetDTWState()
+            return
+        }
 
+        // Tracka peak acceleration
+        if accMagnitude > dtwPeakAcceleration {
+            dtwPeakAcceleration = accMagnitude
+            dtwPeakTime = now
+            dtwHasReachedPeak = false
+        }
+
+        // Detektera peak (acceleration har börjat sjunka)
+        if !dtwHasReachedPeak && dtwPeakAcceleration > 0.5 {
+            let dropFromPeak = dtwPeakAcceleration - accMagnitude
+            if dropFromPeak > dtwPeakAcceleration * 0.3 {
+                // Acceleration har sjunkit 30% från peak - vi har passerat peak
+                dtwHasReachedPeak = true
+                log("DTW: peak detected at \(String(format: "%.2f", dtwPeakAcceleration))g")
+            }
+        }
+
+        // Landing-kriterier
+        guard dtwHasReachedPeak, let peakTime = dtwPeakTime else {
+            return  // Vänta på peak
+        }
+
+        let timeSincePeak = now.timeIntervalSince(peakTime)
+        let accelerationSettled = accMagnitude < dtwPeakAcceleration * 0.5
+        let rotationSettled = rotationRate < 30.0
+        let enoughTimeAfterPeak = timeSincePeak >= 0.15
+
+        // Alla landing-kriterier uppfyllda?
+        let landingConfirmed = accelerationSettled && rotationSettled && enoughTimeAfterPeak
+
+        // Minst 200ms total tid för att undvika för korta gester
+        let minimumElapsed = elapsed >= 0.2
+
+        guard landingConfirmed && minimumElapsed else {
+            // Logga väntan (rate-limited)
+            if timeSincePeak > 0.1 {
+                logDiagnostic("DTW waiting: accSettled=\(accelerationSettled) rotSettled=\(rotationSettled) timeOK=\(enoughTimeAfterPeak)")
+            }
+            return
+        }
+
+        // Landing bekräftad - försök matcha
         if let gesture = tryDTWMatch() {
             lastGestureTime = now
             lastDetectedGesture = gesture
             onGestureDetected?(gesture)
-            log("DETECTED (DTW): \(gesture)")
+            log("DETECTED (DTW): \(gesture) | peak=\(String(format: "%.2f", dtwPeakAcceleration))g | time=\(String(format: "%.0f", elapsed * 1000))ms | samples=\(dtwSamples.count)")
         } else {
-            log("DTW: no match found, samples=\(dtwSamples.count)")
+            log("DTW: no match after landing, samples=\(dtwSamples.count), peak=\(String(format: "%.2f", dtwPeakAcceleration))g")
         }
 
         resetDTWState()
@@ -420,24 +536,28 @@ final class GestureDetector: ObservableObject {
     ) {
         switch gestureState {
         case .idle:
-            handleIdleState(now: now, acc: acc, accMagnitude: accMagnitude, effectiveRotX: effectiveRotX)
+            handleIdleState(now: now, acc: acc, rot: rot, accMagnitude: accMagnitude, effectiveRotX: effectiveRotX)
 
         case .initiated(let startTime, let direction):
-            handleInitiatedState(now: now, startTime: startTime, direction: direction, accMagnitude: accMagnitude, effectiveRotX: effectiveRotX)
+            handleInitiatedState(now: now, startTime: startTime, direction: direction, rot: rot, accMagnitude: accMagnitude, effectiveRotX: effectiveRotX)
 
         case .peaked(let startTime, let direction, let peakAcceleration):
-            handlePeakedState(now: now, startTime: startTime, direction: direction, peakAcceleration: peakAcceleration, effectiveRotX: effectiveRotX)
+            handlePeakedState(now: now, startTime: startTime, direction: direction, rot: rot, accMagnitude: accMagnitude, peakAcceleration: peakAcceleration, effectiveRotX: effectiveRotX)
+
+        case .landing(let startTime, let direction, let peakAcceleration, let peakTime):
+            handleLandingState(now: now, startTime: startTime, direction: direction, peakAcceleration: peakAcceleration, peakTime: peakTime, accMagnitude: accMagnitude, rotationRate: currentRotationRate, effectiveRotX: effectiveRotX)
         }
     }
 
     private func handleIdleState(
         now: Date,
         acc: CMAcceleration,
+        rot: CMRotationRate,
         accMagnitude: Double,
         effectiveRotX: Double
     ) {
-        // Använd gemensam trigger-funktion
-        guard shouldStartGesture(acc: acc, effectiveRotX: effectiveRotX) else {
+        // Använd gemensam trigger-funktion (inkl. rotationsisolering)
+        guard shouldStartGesture(acc: acc, rot: rot, effectiveRotX: effectiveRotX) else {
             return
         }
 
@@ -453,6 +573,10 @@ final class GestureDetector: ObservableObject {
         gestureState = .initiated(startTime: now, direction: direction)
         maxAccelerationInGesture = accMagnitude
 
+        // Starta kumulativ rotationsmätning
+        cumulativeRotation = 0
+        lastSampleTime = now
+
         log("State: idle → initiated(\(direction)) | rotX=\(String(format: "%.1f", effectiveRotX))°/s | acc(x=\(String(format: "%.2f", acc.x)), y=\(String(format: "%.2f", acc.y)), z=\(String(format: "%.2f", acc.z)))")
     }
 
@@ -460,6 +584,7 @@ final class GestureDetector: ObservableObject {
         now: Date,
         startTime: Date,
         direction: GestureDirection,
+        rot: CMRotationRate,
         accMagnitude: Double,
         effectiveRotX: Double
     ) {
@@ -479,6 +604,13 @@ final class GestureDetector: ObservableObject {
             return
         }
 
+        // Uppdatera kumulativ rotation
+        if let lastTime = lastSampleTime {
+            let dt = now.timeIntervalSince(lastTime)
+            cumulativeRotation += abs(effectiveRotX) * dt
+        }
+        lastSampleTime = now
+
         // Uppdatera max acceleration
         if accMagnitude > maxAccelerationInGesture {
             maxAccelerationInGesture = accMagnitude
@@ -487,7 +619,7 @@ final class GestureDetector: ObservableObject {
         // Kontrollera om vi nått peak
         if isPeak(accMagnitude) && accMagnitude >= configuration.accelerationThreshold {
             gestureState = .peaked(startTime: startTime, direction: direction, peakAcceleration: accMagnitude)
-            log("State: initiated → peaked | peak=\(String(format: "%.2f", accMagnitude))g")
+            log("State: initiated → peaked | peak=\(String(format: "%.2f", accMagnitude))g | cumRot=\(String(format: "%.1f", cumulativeRotation))°")
         }
     }
 
@@ -495,6 +627,8 @@ final class GestureDetector: ObservableObject {
         now: Date,
         startTime: Date,
         direction: GestureDirection,
+        rot: CMRotationRate,
+        accMagnitude: Double,
         peakAcceleration: Double,
         effectiveRotX: Double
     ) {
@@ -507,14 +641,28 @@ final class GestureDetector: ObservableObject {
             return
         }
 
+        // Uppdatera kumulativ rotation
+        if let lastTime = lastSampleTime {
+            let dt = now.timeIntervalSince(lastTime)
+            cumulativeRotation += abs(effectiveRotX) * dt
+        }
+        lastSampleTime = now
+
+        // Uppdatera peak om acceleration fortfarande ökar
+        var currentPeak = peakAcceleration
+        if accMagnitude > peakAcceleration {
+            currentPeak = accMagnitude
+            gestureState = .peaked(startTime: startTime, direction: direction, peakAcceleration: currentPeak)
+        }
+
         // Minimum duration-kontroll (för kort = troligen inte en riktig gest)
         if elapsed < C.gestureMinDuration {
-            // Vänta - gesten är inte klar ännu
             return
         }
 
-        // Kontrollera rotation
-        let rotationConfirmed = abs(effectiveRotX) >= configuration.rotationThreshold
+        // Kontrollera rotation med riktningsspecifik tröskel
+        let requiredRotation = configuration.rotationThreshold(for: direction)
+        let rotationConfirmed = abs(effectiveRotX) >= requiredRotation
         let rotationConsistent = isRotationConsistent(effectiveRotX: effectiveRotX, direction: direction)
 
         if !rotationConsistent {
@@ -523,8 +671,61 @@ final class GestureDetector: ObservableObject {
             return
         }
 
+        // Kontrollera kumulativ rotation
+        if cumulativeRotation < C.minimumCumulativeRotation {
+            // Vänta på mer rotation
+            return
+        }
+
+        // När rotation bekräftats, gå till landing-fas för att vänta på att rörelsen "landar"
         if rotationConfirmed {
-            // Gest bekräftad!
+            gestureState = .landing(startTime: startTime, direction: direction, peakAcceleration: currentPeak, peakTime: now)
+            log("State: peaked → landing | peak=\(String(format: "%.2f", currentPeak))g | cumRot=\(String(format: "%.1f", cumulativeRotation))°")
+        }
+    }
+
+    /// Hanterar landing-fasen: väntar på att acceleration och rotation avtar.
+    private func handleLandingState(
+        now: Date,
+        startTime: Date,
+        direction: GestureDirection,
+        peakAcceleration: Double,
+        peakTime: Date,
+        accMagnitude: Double,
+        rotationRate: Double,
+        effectiveRotX: Double
+    ) {
+        let elapsed = now.timeIntervalSince(startTime)
+        let timeSincePeak = now.timeIntervalSince(peakTime)
+
+        // Timeout - men ge mer tid för landing
+        if elapsed > configuration.gestureTimeout + 0.3 {
+            log("Rejected: timeout in landing state (\(String(format: "%.0f", elapsed * 1000))ms)")
+            resetState()
+            return
+        }
+
+        // Landing-kriterier:
+        // 1. Acceleration har sjunkit minst 50% från peak
+        let accelerationSettled = accMagnitude < peakAcceleration * 0.5
+
+        // 2. Rotation har saktat ner (< 40°/s magnitude)
+        let rotationSettled = rotationRate < 40.0
+
+        // 3. Minst 100ms har passerat sedan peak
+        let enoughTimeAfterPeak = timeSincePeak >= 0.1
+
+        // Alla landing-kriterier uppfyllda?
+        if accelerationSettled && rotationSettled && enoughTimeAfterPeak {
+            // Kontrollera att rotation fortfarande är i rätt riktning (inte helt vänt)
+            let rotationConsistent = isRotationConsistent(effectiveRotX: effectiveRotX, direction: direction)
+            if !rotationConsistent && abs(effectiveRotX) > 20.0 {
+                log("Rejected: rotation reversed during landing")
+                resetState()
+                return
+            }
+
+            // Gest bekräftad efter landing!
             completeGesture(direction: direction, peakAcceleration: peakAcceleration, rotX: effectiveRotX, elapsed: elapsed)
         }
     }
@@ -570,6 +771,7 @@ final class GestureDetector: ObservableObject {
         // 1. Z-acceleration dominerar = rörelse framåt/bakåt från kroppen (typiskt arm-lyft)
         let zDominatesAccel = absZ > absX * 1.5 && absZ > 1.0
         if zDominatesAccel {
+            logDiagnostic("Filtered: Z-accel dominates (z=\(String(format: "%.2f", absZ)), x=\(String(format: "%.2f", absX)))")
             return true
         }
 
@@ -577,6 +779,7 @@ final class GestureDetector: ObservableObject {
         let yDominatesOverX = absY > absX * C.armLiftYMultiplier
         let lowXAcceleration = absX < C.armLiftMinX
         if yDominatesOverX && lowXAcceleration {
+            logDiagnostic("Filtered: Y dominates, low X (y=\(String(format: "%.2f", absY)), x=\(String(format: "%.2f", absX)))")
             return true
         }
 
@@ -584,10 +787,30 @@ final class GestureDetector: ObservableObject {
         //    (ren sidledssvepning utan bladvänd-rotation)
         let zRotationDominates = rotZDeg > rotXDeg * 3.0 && rotZDeg > 100.0
         if zRotationDominates {
+            logDiagnostic("Filtered: rotZ dominates (rotZ=\(String(format: "%.1f", rotZDeg))°/s, rotX=\(String(format: "%.1f", rotXDeg))°/s)")
             return true
         }
 
         return false
+    }
+
+    /// Diagnostiklogg för avvisade gester (endast för felsökning)
+    private var diagnosticLoggingEnabled = false
+    private var lastDiagnosticLog = Date.distantPast
+
+    private func logDiagnostic(_ message: String) {
+        guard diagnosticLoggingEnabled else { return }
+        // Rate-limit diagnostiklogg till max 1 per sekund
+        let now = Date()
+        guard now.timeIntervalSince(lastDiagnosticLog) > 1.0 else { return }
+        lastDiagnosticLog = now
+        print("[GestureDetector:DIAG] \(message)")
+    }
+
+    /// Aktiverar/avaktiverar detaljerad diagnostikloggning
+    func setDiagnosticLogging(_ enabled: Bool) {
+        diagnosticLoggingEnabled = enabled
+        log("Diagnostic logging \(enabled ? "enabled" : "disabled")")
     }
 
     // MARK: - Helper Methods
@@ -625,6 +848,8 @@ final class GestureDetector: ObservableObject {
         gestureState = .idle
         maxAccelerationInGesture = 0
         recentAccelerations.removeAll()
+        cumulativeRotation = 0
+        lastSampleTime = nil
         resetDTWState()
     }
 

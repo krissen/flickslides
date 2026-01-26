@@ -1,5 +1,6 @@
 import SwiftUI
 import WatchConnectivity
+import FlickSlidesKit
 
 struct SettingsView: View {
     // MARK: - App Group
@@ -18,12 +19,14 @@ struct SettingsView: View {
         static let saveWorkoutsToHealth = "saveWorkoutsToHealth"
     }
 
-    // MARK: - Default Values
+    // MARK: - Default Values (från FlickSlidesConstants)
+
+    private typealias C = FlickSlidesConstants
 
     private enum Defaults {
-        static let accelerationThreshold: Double = 1.5
-        static let rotationThreshold: Double = 30.0
-        static let gestureDebounceInterval: Double = 1.0
+        static let accelerationThreshold: Double = C.accelerationThreshold
+        static let rotationThreshold: Double = C.rotationThresholdForward
+        static let gestureDebounceInterval: Double = C.gestureDebounceInterval
     }
 
     // MARK: - State
