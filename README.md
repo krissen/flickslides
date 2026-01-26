@@ -80,4 +80,6 @@ Under active development. Primary test device: Apple Watch Ultra 1.
 
 ## License
 
-[MIT](LICENSE)
+[GPL v3](LICENSE)
+
+For commercial licensing options, contact the author.
