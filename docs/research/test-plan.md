@@ -67,7 +67,7 @@ Denna testplan beskriver en systematisk approach for att verifiera FlickSlides-s
 
 | Krav | Mål | Kritisk gräns | Mätmetod |
 |------|-----|---------------|----------|
-| Gestrespons | < 500 ms | < 750 ms | Videoinspelning med tidsstämpel |
+| Gestrespons | < 500 ms | < 750 ms | Loggning med tidsstämplar |
 | False positives | 0 per 30 min | < 2 per 30 min | Scenariotest med naturliga rörelser |
 | False negatives | < 5% | < 10% | Räkning av missade avsiktliga gester |
 | Anslutningsstabilitet | 100% | > 98% | 1h kontinuerlig session |
@@ -757,16 +757,19 @@ Dessa tester ska **INTE** trigga någon gest.
 
 ### 9.1 Latensmätning
 
-#### Metod: Videoinspelning
+#### Metod: Loggbaserad tidsstämpling
 
-1. **Utrustning:**
-   - Kamera/telefon som filmar presentatörens hand OCH skärm
-   - Ramhastighet: Minst 60 fps (helst 120 fps)
+1. **Förberedelse:**
+   - Aktivera debug-loggning i alla appar (Watch, Phone, Mac)
+   - Säkerställ synkroniserade klockor mellan enheter
 
 2. **Procedur:**
-   - Filma gest-ögonblicket (hand)
-   - Filma slidebytet (skärm)
-   - Räkna frames mellan gest och byte
+   - Utför gest
+   - Samla loggar från alla enheter
+   - Beräkna latens mellan tidsstämplar:
+     - T1: Gestdetektering (Watch)
+     - T2: Kommando mottaget (Mac)
+     - T3: Slidebyte utfört
    - Konvertera till millisekunder
 
 3. **Formel:**
@@ -866,7 +869,7 @@ Dessa tester ska **INTE** trigga någon gest.
 [ ] Engångshändelse
 
 ### Bilagor
-- [Skärmdump / Video / Logg]
+- [Skärmdump / Logg]
 
 ### Ytterligare information
 [OS-version, app-version, etc.]
@@ -977,7 +980,7 @@ Build: ___________
 ### Före start
 [ ] Alla enheter laddade (>50%)
 [ ] Keynote-presentation öppen
-[ ] Video-inspelning redo
+[ ] Debug-loggning aktiverad
 
 ### Under test (30 min)
 [ ] Presentationsläge aktiverat
