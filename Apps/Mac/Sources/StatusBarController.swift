@@ -10,12 +10,14 @@ final class StatusBarController {
     private var statusMenuItem: NSMenuItem!
     private var pendingInvitationItem: NSMenuItem!
     private var trustedPeersSubmenu: NSMenu!
+    private var accessibilityMenuItem: NSMenuItem!
 
     init(connectionManager: ConnectionManager) {
         self.connectionManager = connectionManager
         setupStatusItem()
         setupMenu()
         observeConnectionState()
+        startAccessibilityStatusTimer()
     }
 
     private func setupStatusItem() {
@@ -64,14 +66,15 @@ final class StatusBarController {
 
         menu.addItem(NSMenuItem.separator())
 
-        // Accessibility-status
-        let accessibilityItem = NSMenuItem(
-            title: AccessibilityManager.isAccessibilityEnabled ? "✓ Behörighet OK" : "⚠ Behörighet saknas",
+        // Accessibility-status (uppdateras dynamiskt)
+        accessibilityMenuItem = NSMenuItem(
+            title: "",
             action: #selector(openAccessibilitySettings),
             keyEquivalent: ""
         )
-        accessibilityItem.target = self
-        menu.addItem(accessibilityItem)
+        accessibilityMenuItem.target = self
+        updateAccessibilityStatus()
+        menu.addItem(accessibilityMenuItem)
 
         menu.addItem(NSMenuItem.separator())
 
@@ -214,6 +217,18 @@ final class StatusBarController {
     @objc private func removeTrustedPeer(_ sender: NSMenuItem) {
         guard let peerName = sender.representedObject as? String else { return }
         connectionManager.untrustPeer(peerName)
+    }
+
+    private func updateAccessibilityStatus() {
+        let isEnabled = AccessibilityManager.isAccessibilityEnabled
+        accessibilityMenuItem.title = isEnabled ? "✓ Behörighet OK" : "⚠ Behörighet saknas"
+    }
+
+    private func startAccessibilityStatusTimer() {
+        // Kontrollera accessibility-status var 5:e sekund
+        Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            self?.updateAccessibilityStatus()
+        }
     }
 
     @objc private func openAccessibilitySettings() {
