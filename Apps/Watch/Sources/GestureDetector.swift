@@ -26,20 +26,9 @@ import FlickSlidesKit
 @MainActor
 final class GestureDetector: ObservableObject {
 
-    // MARK: - Constants
+    // MARK: - Constants (from FlickSlidesConstants)
 
-    private enum Defaults {
-        static let accelerationThreshold: Double = 1.5      // g - minimum acceleration
-        static let rotationThreshold: Double = 30.0         // grader/sekund
-        static let gestureDebounceInterval: Double = 1.0    // sekunder
-        static let samplingRate: Double = 50.0              // Hz
-        static let gestureTimeout: Double = 1.0             // sekunder - max tid för en gest
-        static let gestureMinDuration: Double = 0.08        // sekunder - minimum tid för en gest (80ms)
-        static let armLiftYMultiplier: Double = 1.5         // Y > X * multiplier = arm-lyft
-        static let armLiftMinX: Double = 0.5                // g - minimum X för att inte vara arm-lyft
-        static let initiationRotationThreshold: Double = 10.0  // grader/sekund - start av rotation
-        static let peakAccelerationRatio: Double = 0.8      // peak måste vara minst 80% av max
-    }
+    private typealias C = FlickSlidesConstants
 
     private enum UserDefaultsKeys {
         static let accelerationThreshold = "accelerationThreshold"
@@ -105,20 +94,20 @@ final class GestureDetector: ObservableObject {
             let defaults = UserDefaults(suiteName: "group.com.kristianniemi.FlickSlides") ?? .standard
 
             let accelThreshold = defaults.object(forKey: UserDefaultsKeys.accelerationThreshold) as? Double
-                ?? Defaults.accelerationThreshold
+                ?? C.accelerationThreshold
             let rotThreshold = defaults.object(forKey: UserDefaultsKeys.rotationThreshold) as? Double
-                ?? Defaults.rotationThreshold
+                ?? C.rotationThreshold
             let debounce = defaults.object(forKey: UserDefaultsKeys.gestureDebounceInterval) as? Double
-                ?? Defaults.gestureDebounceInterval
+                ?? C.gestureDebounceInterval
             let rightWrist = defaults.object(forKey: UserDefaultsKeys.watchOnRightWrist) as? Bool ?? true
 
             return Configuration(
                 accelerationThreshold: accelThreshold,
                 rotationThreshold: rotThreshold,
                 debounceInterval: debounce,
-                samplingRate: Defaults.samplingRate,
+                samplingRate: C.sensorSamplingRate,
                 watchOnRightWrist: rightWrist,
-                gestureTimeout: Defaults.gestureTimeout
+                gestureTimeout: C.gestureTimeout
             )
         }
     }
@@ -316,7 +305,7 @@ final class GestureDetector: ObservableObject {
         }
 
         // Rotation måste ha påbörjats
-        let rotationStarted = abs(effectiveRotX) > Defaults.initiationRotationThreshold
+        let rotationStarted = abs(effectiveRotX) > C.initiationRotationThreshold
 
         return rotationStarted
     }
@@ -519,7 +508,7 @@ final class GestureDetector: ObservableObject {
         }
 
         // Minimum duration-kontroll (för kort = troligen inte en riktig gest)
-        if elapsed < Defaults.gestureMinDuration {
+        if elapsed < C.gestureMinDuration {
             // Vänta - gesten är inte klar ännu
             return
         }
@@ -585,8 +574,8 @@ final class GestureDetector: ObservableObject {
         }
 
         // 2. Y-acceleration dominerar och X är låg = ren vertikal rörelse
-        let yDominatesOverX = absY > absX * Defaults.armLiftYMultiplier
-        let lowXAcceleration = absX < Defaults.armLiftMinX
+        let yDominatesOverX = absY > absX * C.armLiftYMultiplier
+        let lowXAcceleration = absX < C.armLiftMinX
         if yDominatesOverX && lowXAcceleration {
             return true
         }

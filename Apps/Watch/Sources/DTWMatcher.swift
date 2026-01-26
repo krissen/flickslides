@@ -15,11 +15,9 @@ final class DTWMatcher {
         let distance: Double
     }
 
-    // MARK: - Constants
+    // MARK: - Constants (from FlickSlidesConstants)
 
-    /// Absolut avståndströskel som fallback när inga negativa mallar finns.
-    /// Värdet är baserat på typiska DTW-avstånd för korrekta gestmatchningar.
-    private static let absoluteDistanceThreshold: Double = 15.0
+    private typealias C = FlickSlidesConstants
 
     // MARK: - Properties
 
@@ -112,7 +110,7 @@ final class DTWMatcher {
         } else {
             // Utan negativa mallar: använd absolut tröskel som fallback
             // Detta förhindrar att DTW godkänner ALLA gester
-            threshold = Self.absoluteDistanceThreshold
+            threshold = C.dtwDistanceThreshold
         }
 
         // Kontrollera om bästa match passerar tröskeln
@@ -151,7 +149,8 @@ final class DTWMatcher {
             }
         }
 
-        return matrix[n][m]
+        // Normalisera med path-längd för rättvis jämförelse oavsett gestlängd
+        return matrix[n][m] / Double(n + m)
     }
 
     private func sampleDistance(_ a: MotionSample, _ b: MotionSample) -> Double {

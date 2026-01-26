@@ -26,19 +26,9 @@ final class CalibrationRecorder: ObservableObject {
     @Published private(set) var currentGestureType: GestureLabel?
     @Published private(set) var currentSampleIndex: Int = 0
 
-    // MARK: - Configuration
+    // MARK: - Configuration (from FlickSlidesConstants)
 
-    private enum Config {
-        static let samplingRate: Double = 50.0           // Hz
-        static let accelerationThreshold: Double = 0.6  // g - start recording (lägre för mjukare gester)
-        static let idleDetectionThreshold: Double = 0.15 // g - anses som vilande
-        static let idleRequiredDuration: TimeInterval = 0.3 // Sekunder av stillhet
-        static let minSamples: Int = 15                  // Minimum samples för giltig gest (15 = 300ms vid 50Hz)
-        static let maxDuration: TimeInterval = 2.0       // Max inspelningstid (längre för t.ex. "klappa axel")
-        static let minDuration: TimeInterval = 0.3       // Min inspelningstid (300ms)
-        static let idleThreshold: Double = 0.2           // g - acceleration för att avsluta
-        static let recordingTimeout: TimeInterval = 10.0 // Timeout om ingen gest detekteras
-    }
+    private typealias C = FlickSlidesConstants
 
     // Callback för att skicka meddelanden till Phone
     var onSendMessage: ((CalibrationMessage) -> Void)?
@@ -123,7 +113,7 @@ final class CalibrationRecorder: ObservableObject {
         log("Waiting for idle...")
 
         // Starta motion updates
-        motionManager.deviceMotionUpdateInterval = 1.0 / Config.samplingRate
+        motionManager.deviceMotionUpdateInterval = 1.0 / C.sensorSamplingRate
         motionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, error in
             guard let self, let motion else { return }
             Task { @MainActor in
@@ -179,18 +169,18 @@ final class CalibrationRecorder: ObservableObject {
 
         // Timeout-kontroll
         if let recordStart = recordingStartTime,
-           now.timeIntervalSince(recordStart) > Config.recordingTimeout {
+           now.timeIntervalSince(recordStart) > C.calibrationRecordingTimeout {
             finishRecording(with: .failure(.timeout))
             return
         }
 
         // Fas 1: Vänta på idle (armen vilande)
         if isWaitingForIdle {
-            if accMagnitude < Config.idleDetectionThreshold {
+            if accMagnitude < C.calibrationIdleThreshold {
                 // Låg acceleration - kan vara idle
                 if idleStartTime == nil {
                     idleStartTime = now
-                } else if now.timeIntervalSince(idleStartTime!) >= Config.idleRequiredDuration {
+                } else if now.timeIntervalSince(idleStartTime!) >= C.calibrationIdleRequiredDuration {
                     // Tillräckligt länge med låg acceleration - vi är idle!
                     isWaitingForIdle = false
                     isReadyForGesture = true
@@ -218,7 +208,7 @@ final class CalibrationRecorder: ObservableObject {
         }
 
         // Fas 3: Detektera geststart
-        if gestureStartTime == nil && accMagnitude > Config.accelerationThreshold {
+        if gestureStartTime == nil && accMagnitude > C.calibrationAccelerationThreshold {
             // Använd första sample i pre-buffern som startpunkt
             let actualStartTime = preBuffer.first?.0 ?? now
             gestureStartTime = actualStartTime
@@ -257,8 +247,8 @@ final class CalibrationRecorder: ObservableObject {
 
             // Kontrollera om gesten är klar
             let elapsed = now.timeIntervalSince(startTime)
-            let shouldFinish = elapsed > Config.maxDuration ||
-                              (elapsed > Config.minDuration && accMagnitude < Config.idleThreshold)
+            let shouldFinish = elapsed > C.calibrationMaxDuration ||
+                              (elapsed > C.calibrationMinDuration && accMagnitude < C.calibrationEndThreshold)
 
             if shouldFinish {
                 finishGesture()
@@ -267,7 +257,7 @@ final class CalibrationRecorder: ObservableObject {
     }
 
     private func finishGesture() {
-        guard currentSamples.count >= Config.minSamples else {
+        guard currentSamples.count >= C.calibrationMinSamples else {
             log("Too few samples: \(currentSamples.count)")
             finishRecording(with: .failure(.tooFewSamples))
             return
