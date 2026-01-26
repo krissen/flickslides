@@ -7,21 +7,19 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0089DE4578A7F44A904B6661 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCD87EECD3C2D1C372E428B /* OnboardingView.swift */; };
 		079870E2F573941DA0A0D471 /* FlickSlidesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 92BC6288264FBF83284EC95E /* FlickSlidesKit */; };
-		08A1B2C3D4E5F67890123456 /* DTWMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6789012345678 /* DTWMatcher.swift */; };
-		08B2C3D4E5F6789012345678 /* GestureTemplateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6789012345678A1 /* GestureTemplateStore.swift */; };
-		08C3D4E5F6789012345678A1 /* CalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F6789012345678A1B2 /* CalibrationView.swift */; };
-		08D4E5F6789012345678A1B2 /* CalibrationRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6789012345678A1B2C3 /* CalibrationRecorder.swift */; };
-		08E5F6789012345678A1B2C3 /* WatchCalibrationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F6789012345678A1B2C3D4 /* WatchCalibrationCoordinator.swift */; };
-		08F6789012345678A1B2C3D4 /* WatchCalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6789012345678A1B2C3D4E5 /* WatchCalibrationView.swift */; };
-		09A4E33E7D9BF67836E273D1 /* PhoneCalibrationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 746DEAB501F90F257B00FB70 /* PhoneCalibrationManager.swift */; };
-		09A5E33E7D9BF67836E273D3 /* PhoneCalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 746DEAB501F90F257B00FB72 /* PhoneCalibrationView.swift */; };
 		09B4E33E7D9BF67836E273D2 /* WatchSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 646DEAB501F90F257B00FB71 /* WatchSessionManager.swift */; };
 		0CE9A57A1ABB06CBF3E20865 /* FlickSlidesPhoneApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD381C7F07DEA182D0EA5F4E /* FlickSlidesPhoneApp.swift */; };
+		0DB105648BA8E381BB46F1C2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 773A0C6FF6E06E4F14832E39 /* Assets.xcassets */; };
+		11871E0AA86D1276D1E65A55 /* PhoneCalibrationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8071670C92F03CB6ED6FB30 /* PhoneCalibrationManager.swift */; };
 		176550A655CEFEC4339D1E4D /* FlickSlidesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3E1CA812A95A07DD4BE49ECF /* FlickSlidesKit */; };
 		3199B1790A6925F2A9093CC7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 803EE9410B0EFB5A8480B8B7 /* ContentView.swift */; };
 		3FAED3C460418FC2E9A54A19 /* GestureDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AEC07078FE530BCA417D9D5 /* GestureDetector.swift */; };
+		41A7E0E27B978755ACDC31D4 /* CalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EA6994A3D30C0D86BE9E354 /* CalibrationView.swift */; };
+		4BCB09B4263E12C70816952A /* DTWMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41AD4DB5FED5C9B262B82039 /* DTWMatcher.swift */; };
 		4CB2F77ED6BCB58542DAF212 /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 445FB66AC6E7CABC19AF8CF5 /* StatusBarController.swift */; };
+		4CCEDF57B216FF0EAF004C82 /* CalibrationRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 066C3274CFBC590B59E1F7A8 /* CalibrationRecorder.swift */; };
 		6226BF90A1A2FEC6EF8D194F /* PresentationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F913E581E4EF6F14B483AA4F /* PresentationManager.swift */; };
 		6C4A7374FB1A4E1640717EC1 /* KeyboardSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD90C1ADB4C77D204AE70074 /* KeyboardSimulator.swift */; };
 		6E38DFF0A7E9FAEA9EA09E62 /* FlickSlidesMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06A27CEB1E25339638FFCB4C /* FlickSlidesMacApp.swift */; };
@@ -31,11 +29,17 @@
 		8C21AC87FBC7356268254A45 /* AccessibilityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B5FD7801F17DF1E6B10B216 /* AccessibilityManager.swift */; };
 		98470D0E73F799B0F6ECB395 /* FlickSlidesWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 0C337354533D2F2D8642D449 /* FlickSlidesWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A6218BD9170D7F2BFE76CADE /* BridgeCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E9FE5D271E31BE87E3F37F5 /* BridgeCoordinator.swift */; };
+		B5E0141ACB134524549BA0A6 /* WatchCalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4065237B698D4778FA10AC27 /* WatchCalibrationView.swift */; };
+		B8FE2B703011FFE9734B7C25 /* GestureTemplateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 977582A1C31C59EBAB012A73 /* GestureTemplateStore.swift */; };
+		C0FEED0BC438B47F7688934E /* WatchCalibrationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D4FE5C748EFB5B4ECA72AC0 /* WatchCalibrationCoordinator.swift */; };
+		CDA667E80033390792680D1F /* PhoneCalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFEC1A9B0DFC49942DC6D696 /* PhoneCalibrationView.swift */; };
 		D57244D7E7E2508394A723F9 /* FlickSlidesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 565A7CA81B259520A2C9BB1A /* FlickSlidesKit */; };
 		DE5AFD713CAE63528B581395 /* FlickSlidesWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E7D8BA39702E9B404617B0 /* FlickSlidesWatchApp.swift */; };
+		E30322132F7032AE7D39AED7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5688E82CBF3B5936AD9C25B0 /* Assets.xcassets */; };
 		E4011ECD6C983726C01D3DD4 /* MacConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90F3AFE3FE3E0C9A22D8D17D /* MacConnectionManager.swift */; };
 		EB54B93D75634E60E4E59EC5 /* ConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B85A761E1CA671CEC38DAF5 /* ConnectionManager.swift */; };
 		EDD5115D61D86DAC3E396C0A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A81EA0B9874CE07E2ECD72D0 /* SettingsView.swift */; };
+		F4414F13498188ED487A2B42 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AC1E5CE2F1C93B18FA7DD6E8 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -63,35 +67,39 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		066C3274CFBC590B59E1F7A8 /* CalibrationRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrationRecorder.swift; sourceTree = "<group>"; };
 		06A27CEB1E25339638FFCB4C /* FlickSlidesMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlickSlidesMacApp.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F6789012345678 /* DTWMatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DTWMatcher.swift; sourceTree = "<group>"; };
-		B2C3D4E5F6789012345678A1 /* GestureTemplateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GestureTemplateStore.swift; sourceTree = "<group>"; };
-		C3D4E5F6789012345678A1B2 /* CalibrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrationView.swift; sourceTree = "<group>"; };
-		D4E5F6789012345678A1B2C3 /* CalibrationRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrationRecorder.swift; sourceTree = "<group>"; };
-		E5F6789012345678A1B2C3D4 /* WatchCalibrationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchCalibrationCoordinator.swift; sourceTree = "<group>"; };
-		F6789012345678A1B2C3D4E5 /* WatchCalibrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchCalibrationView.swift; sourceTree = "<group>"; };
-		746DEAB501F90F257B00FB70 /* PhoneCalibrationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Calibration/PhoneCalibrationManager.swift"; sourceTree = "<group>"; };
-		746DEAB501F90F257B00FB72 /* PhoneCalibrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Calibration/PhoneCalibrationView.swift"; sourceTree = "<group>"; };
 		0C337354533D2F2D8642D449 /* FlickSlidesWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlickSlidesWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0D4FE5C748EFB5B4ECA72AC0 /* WatchCalibrationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchCalibrationCoordinator.swift; sourceTree = "<group>"; };
+		1EA6994A3D30C0D86BE9E354 /* CalibrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrationView.swift; sourceTree = "<group>"; };
+		4065237B698D4778FA10AC27 /* WatchCalibrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchCalibrationView.swift; sourceTree = "<group>"; };
+		41AD4DB5FED5C9B262B82039 /* DTWMatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DTWMatcher.swift; sourceTree = "<group>"; };
 		442859D4B621E4CF2421F893 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		445FB66AC6E7CABC19AF8CF5 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
 		4858FD1EABDB5BDC792D8DC8 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		5688E82CBF3B5936AD9C25B0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		5E9FE5D271E31BE87E3F37F5 /* BridgeCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeCoordinator.swift; sourceTree = "<group>"; };
 		646DEAB501F90F257B00FB71 /* WatchSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSessionManager.swift; sourceTree = "<group>"; };
 		64E7D8BA39702E9B404617B0 /* FlickSlidesWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlickSlidesWatchApp.swift; sourceTree = "<group>"; };
+		773A0C6FF6E06E4F14832E39 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7AEC07078FE530BCA417D9D5 /* GestureDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GestureDetector.swift; sourceTree = "<group>"; };
 		7FCE06DFEECAF4624FD45CA3 /* FlickSlidesPhone.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FlickSlidesPhone.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		803EE9410B0EFB5A8480B8B7 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		8B5FD7801F17DF1E6B10B216 /* AccessibilityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityManager.swift; sourceTree = "<group>"; };
 		8B85A761E1CA671CEC38DAF5 /* ConnectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionManager.swift; sourceTree = "<group>"; };
 		90F3AFE3FE3E0C9A22D8D17D /* MacConnectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacConnectionManager.swift; sourceTree = "<group>"; };
+		977582A1C31C59EBAB012A73 /* GestureTemplateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GestureTemplateStore.swift; sourceTree = "<group>"; };
 		A81EA0B9874CE07E2ECD72D0 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		AC1E5CE2F1C93B18FA7DD6E8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BDAD3B4F26E4CC9843F3F2B6 /* flickslides */ = {isa = PBXFileReference; lastKnownFileType = folder; name = flickslides; path = ..; sourceTree = SOURCE_ROOT; };
+		BDCD87EECD3C2D1C372E428B /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		C8071670C92F03CB6ED6FB30 /* PhoneCalibrationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneCalibrationManager.swift; sourceTree = "<group>"; };
 		CD381C7F07DEA182D0EA5F4E /* FlickSlidesPhoneApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlickSlidesPhoneApp.swift; sourceTree = "<group>"; };
 		CD90C1ADB4C77D204AE70074 /* KeyboardSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardSimulator.swift; sourceTree = "<group>"; };
 		CED1D49F1AE41C6A695548F5 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		E7794E8BDF0BE202EE266632 /* FlickSlidesMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlickSlidesMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F913E581E4EF6F14B483AA4F /* PresentationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresentationManager.swift; sourceTree = "<group>"; };
+		FFEC1A9B0DFC49942DC6D696 /* PhoneCalibrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneCalibrationView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -122,6 +130,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		028845FA6EF5967B8857A8A4 /* Phone */ = {
+			isa = PBXGroup;
+			children = (
+				AC1E5CE2F1C93B18FA7DD6E8 /* Assets.xcassets */,
+			);
+			path = Phone;
+			sourceTree = "<group>";
+		};
 		0E7283EBDF8C01E83ACDBFB0 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -132,15 +148,43 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		1D4D805BBFA4F5EE1D735E2D /* Calibration */ = {
+			isa = PBXGroup;
+			children = (
+				C8071670C92F03CB6ED6FB30 /* PhoneCalibrationManager.swift */,
+				FFEC1A9B0DFC49942DC6D696 /* PhoneCalibrationView.swift */,
+			);
+			path = Calibration;
+			sourceTree = "<group>";
+		};
+		369FEC9B24E7FDBE74C787EA /* Mac */ = {
+			isa = PBXGroup;
+			children = (
+				773A0C6FF6E06E4F14832E39 /* Assets.xcassets */,
+			);
+			path = Mac;
+			sourceTree = "<group>";
+		};
 		892844CF45599024CD424BB9 = {
 			isa = PBXGroup;
 			children = (
+				369FEC9B24E7FDBE74C787EA /* Mac */,
 				C437C52515B62D7E12BF58FD /* Packages */,
+				028845FA6EF5967B8857A8A4 /* Phone */,
 				B4B0B0242DBDD7B0CB7838C8 /* Sources */,
 				B55A0A2218A05B5039EB4B7E /* Sources */,
 				CC5F78DDDE6ECF4FBDA87293 /* Sources */,
+				B16A8691066346339AD09586 /* Watch */,
 				0E7283EBDF8C01E83ACDBFB0 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		B16A8691066346339AD09586 /* Watch */ = {
+			isa = PBXGroup;
+			children = (
+				5688E82CBF3B5936AD9C25B0 /* Assets.xcassets */,
+			);
+			path = Watch;
 			sourceTree = "<group>";
 		};
 		B4B0B0242DBDD7B0CB7838C8 /* Sources */ = {
@@ -161,12 +205,12 @@
 		B55A0A2218A05B5039EB4B7E /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				1D4D805BBFA4F5EE1D735E2D /* Calibration */,
 				5E9FE5D271E31BE87E3F37F5 /* BridgeCoordinator.swift */,
 				803EE9410B0EFB5A8480B8B7 /* ContentView.swift */,
 				CD381C7F07DEA182D0EA5F4E /* FlickSlidesPhoneApp.swift */,
 				90F3AFE3FE3E0C9A22D8D17D /* MacConnectionManager.swift */,
-				746DEAB501F90F257B00FB70 /* PhoneCalibrationManager.swift */,
-				746DEAB501F90F257B00FB72 /* PhoneCalibrationView.swift */,
+				BDCD87EECD3C2D1C372E428B /* OnboardingView.swift */,
 				442859D4B621E4CF2421F893 /* SettingsView.swift */,
 				646DEAB501F90F257B00FB71 /* WatchSessionManager.swift */,
 			);
@@ -185,16 +229,16 @@
 		CC5F78DDDE6ECF4FBDA87293 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
-				D4E5F6789012345678A1B2C3 /* CalibrationRecorder.swift */,
-				C3D4E5F6789012345678A1B2 /* CalibrationView.swift */,
+				066C3274CFBC590B59E1F7A8 /* CalibrationRecorder.swift */,
+				1EA6994A3D30C0D86BE9E354 /* CalibrationView.swift */,
 				CED1D49F1AE41C6A695548F5 /* ContentView.swift */,
-				A1B2C3D4E5F6789012345678 /* DTWMatcher.swift */,
+				41AD4DB5FED5C9B262B82039 /* DTWMatcher.swift */,
 				64E7D8BA39702E9B404617B0 /* FlickSlidesWatchApp.swift */,
 				7AEC07078FE530BCA417D9D5 /* GestureDetector.swift */,
-				B2C3D4E5F6789012345678A1 /* GestureTemplateStore.swift */,
+				977582A1C31C59EBAB012A73 /* GestureTemplateStore.swift */,
 				F913E581E4EF6F14B483AA4F /* PresentationManager.swift */,
-				E5F6789012345678A1B2C3D4 /* WatchCalibrationCoordinator.swift */,
-				F6789012345678A1B2C3D4E5 /* WatchCalibrationView.swift */,
+				0D4FE5C748EFB5B4ECA72AC0 /* WatchCalibrationCoordinator.swift */,
+				4065237B698D4778FA10AC27 /* WatchCalibrationView.swift */,
 			);
 			name = Sources;
 			path = Watch/Sources;
@@ -208,6 +252,7 @@
 			buildConfigurationList = EA9F6BFD44FC6E9720F88C52 /* Build configuration list for PBXNativeTarget "FlickSlidesMac" */;
 			buildPhases = (
 				80B9AD86D44A6BB012744364 /* Sources */,
+				1FFCE7A8F5F81CA1BED6AF07 /* Resources */,
 				00E158BCB831637146063425 /* Frameworks */,
 			);
 			buildRules = (
@@ -227,6 +272,7 @@
 			buildConfigurationList = 0DC49FB96DD78E440AD220CD /* Build configuration list for PBXNativeTarget "FlickSlidesWatch" */;
 			buildPhases = (
 				D4CB78722556F7FC7D90A746 /* Sources */,
+				6AD8E5AFFEDBC8F5F973B277 /* Resources */,
 				7D61A923B61395323CC2B354 /* Frameworks */,
 			);
 			buildRules = (
@@ -246,6 +292,7 @@
 			buildConfigurationList = 871E7A6E2B782D00967564E7 /* Build configuration list for PBXNativeTarget "FlickSlidesPhone" */;
 			buildPhases = (
 				607157E9C008D0763AF68E92 /* Sources */,
+				999579EA2EB94A00095BBD78 /* Resources */,
 				EA607EC414371BC71CB63A6E /* Frameworks */,
 				97F35CFDBA383BF998EA1D28 /* Embed Watch Content */,
 			);
@@ -309,6 +356,33 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		1FFCE7A8F5F81CA1BED6AF07 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0DB105648BA8E381BB46F1C2 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6AD8E5AFFEDBC8F5F973B277 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E30322132F7032AE7D39AED7 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		999579EA2EB94A00095BBD78 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F4414F13498188ED487A2B42 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		607157E9C008D0763AF68E92 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -318,8 +392,9 @@
 				3199B1790A6925F2A9093CC7 /* ContentView.swift in Sources */,
 				0CE9A57A1ABB06CBF3E20865 /* FlickSlidesPhoneApp.swift in Sources */,
 				E4011ECD6C983726C01D3DD4 /* MacConnectionManager.swift in Sources */,
-				09A4E33E7D9BF67836E273D1 /* PhoneCalibrationManager.swift in Sources */,
-				09A5E33E7D9BF67836E273D3 /* PhoneCalibrationView.swift in Sources */,
+				0089DE4578A7F44A904B6661 /* OnboardingView.swift in Sources */,
+				11871E0AA86D1276D1E65A55 /* PhoneCalibrationManager.swift in Sources */,
+				CDA667E80033390792680D1F /* PhoneCalibrationView.swift in Sources */,
 				830E8755C37FF94069C2B0D0 /* SettingsView.swift in Sources */,
 				09B4E33E7D9BF67836E273D2 /* WatchSessionManager.swift in Sources */,
 			);
@@ -343,16 +418,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				08D4E5F6789012345678A1B2 /* CalibrationRecorder.swift in Sources */,
-				08C3D4E5F6789012345678A1 /* CalibrationView.swift in Sources */,
+				4CCEDF57B216FF0EAF004C82 /* CalibrationRecorder.swift in Sources */,
+				41A7E0E27B978755ACDC31D4 /* CalibrationView.swift in Sources */,
 				79455FE9AFA990232EC0D024 /* ContentView.swift in Sources */,
-				08A1B2C3D4E5F67890123456 /* DTWMatcher.swift in Sources */,
+				4BCB09B4263E12C70816952A /* DTWMatcher.swift in Sources */,
 				DE5AFD713CAE63528B581395 /* FlickSlidesWatchApp.swift in Sources */,
 				3FAED3C460418FC2E9A54A19 /* GestureDetector.swift in Sources */,
-				08B2C3D4E5F6789012345678 /* GestureTemplateStore.swift in Sources */,
+				B8FE2B703011FFE9734B7C25 /* GestureTemplateStore.swift in Sources */,
 				6226BF90A1A2FEC6EF8D194F /* PresentationManager.swift in Sources */,
-				08E5F6789012345678A1B2C3 /* WatchCalibrationCoordinator.swift in Sources */,
-				08F6789012345678A1B2C3D4 /* WatchCalibrationView.swift in Sources */,
+				C0FEED0BC438B47F7688934E /* WatchCalibrationCoordinator.swift in Sources */,
+				B5E0141ACB134524549BA0A6 /* WatchCalibrationView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

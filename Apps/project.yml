@@ -22,6 +22,7 @@ targets:
     platform: watchOS
     sources:
       - path: Watch/Sources
+      - path: Watch/Assets.xcassets
     info:
       path: Watch/Info.plist
       properties:
@@ -49,6 +50,7 @@ targets:
     platform: iOS
     sources:
       - path: Phone/Sources
+      - path: Phone/Assets.xcassets
     info:
       path: Phone/Info.plist
       properties:
@@ -79,6 +81,7 @@ targets:
     platform: macOS
     sources:
       - path: Mac/Sources
+      - path: Mac/Assets.xcassets
     info:
       path: Mac/Info.plist
       properties:
