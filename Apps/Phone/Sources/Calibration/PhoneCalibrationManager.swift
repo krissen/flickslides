@@ -16,13 +16,12 @@ final class PhoneCalibrationManager: ObservableObject {
     // MARK: - Configuration
 
     private enum Config {
-        static let initialBatchSize = 5          // Första batchen
-        static let additionalBatchSize = 5       // Extra samples vid behov
-        static let minSamplesRequired = 5        // Minimum för att godkänna
-        static let maxSamplesPerType = 15        // Max totalt per gest-typ
-        static let samplesPerNegativeType = 5    // 5 samples per negativ gesttyp
-        static let negativeSamplesTarget = 50    // 10 typer × 5 samples = 50 totalt
+        static let initialBatchSize = 3          // Minimal batch - snabb kalibrering
+        static let additionalBatchSize = 2       // Extra samples vid behov
+        static let minSamplesRequired = 3        // Minimum för att godkänna
+        static let maxSamplesPerType = 5         // Max totalt per gest-typ
         static let recordingTimeoutSeconds = 10.0
+        // Negativa samples tas bort - använd threshold-baserad filtrering istället
     }
 
     // MARK: - Published State
@@ -44,8 +43,8 @@ final class PhoneCalibrationManager: ObservableObject {
     private let watchSession = WatchSessionManager.shared
     private let outlierDetector = OutlierDetector(
         outlierThreshold: 1.5,
-        minSamplesToKeep: 5,
-        maxSamplesToKeep: 12
+        minSamplesToKeep: 3,
+        maxSamplesToKeep: 5
     )
     private let templateStore = GestureTemplateStore()
 
@@ -53,24 +52,9 @@ final class PhoneCalibrationManager: ObservableObject {
 
     private var forwardSamples: [MotionSampleBatch] = []
     private var backwardSamples: [MotionSampleBatch] = []
-    private var negativeSamples: [MotionSampleBatch] = []
 
     private var currentRecordingContinuation: CheckedContinuation<MotionSampleBatch?, Never>?
     private var isRecordingInProgress = false
-
-    // Negative prompts - tydliga och specifika
-    private let negativePrompts = [
-        "LYFT armen rakt upp och ner igen",
-        "VRID handleden fram och tillbaka",
-        "PEKA framåt med fingret",
-        "TITTA på klockan (lyft armen till ansiktet)",
-        "VIFTA handen fram och tillbaka",
-        "SKAKA handen lätt",
-        "GÖR en cirkelrörelse med handen",
-        "LYFT handen till axeln",
-        "LÅTSAS klappa någon på axeln",
-        "STRYK dig över pannan"
-    ]
 
     // MARK: - Initialization
 
@@ -95,7 +79,6 @@ final class PhoneCalibrationManager: ObservableObject {
         // Rensa tidigare data
         forwardSamples.removeAll()
         backwardSamples.removeAll()
-        negativeSamples.removeAll()
 
         phase = .intro
         progress = 0
@@ -114,8 +97,8 @@ final class PhoneCalibrationManager: ObservableObject {
         // Samla Backward-gester
         await collectGestureType(.flickBackward, prompt: "Gör en FÖREGÅENDE-gest (flicka bakåt)")
 
-        // Samla Negativa samples
-        await collectNegativeSamples()
+        // Negativa samples skippas - threshold-baserad filtrering används istället
+        // för att undvika false positives. Detta ger snabbare kalibrering (~30 sek).
 
         // Analysera och spara
         await analyzeAndSave()
@@ -137,20 +120,25 @@ final class PhoneCalibrationManager: ObservableObject {
     // MARK: - Watch Communication
 
     private func waitForWatch() async {
-        // Pinga Watch
-        watchSession.sendCalibrationMessage(.ping)
+        // Begär kalibrering - visar dialog på Watch
+        watchSession.sendCalibrationMessage(.calibrationRequested)
 
-        // Vänta på svar (max 5 sekunder)
-        for _ in 0..<50 {
+        // Vänta på svar (max 30 sekunder - användaren behöver tid att svara)
+        for _ in 0..<300 {
             if isWatchReady { return }
+            if case .error = phase { return } // Avbryt om användaren avvisade
             try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
         }
     }
 
     private func handleWatchMessage(_ message: CalibrationMessage) {
         switch message {
-        case .pong, .watchReady:
+        case .calibrationAccepted, .pong, .watchReady:
             isWatchReady = true
+
+        case .calibrationDeclined:
+            isWatchReady = false
+            phase = .error(message: "Kalibrering avvisades på klockan")
 
         case .watchDismissed:
             isWatchReady = false
@@ -190,7 +178,7 @@ final class PhoneCalibrationManager: ObservableObject {
             // Vi försöker igen automatiskt
 
         // Meddelanden som Phone skickar
-        case .startRecording, .stopRecording, .calibrationAborted, .calibrationComplete, .ping:
+        case .calibrationRequested, .startRecording, .stopRecording, .calibrationAborted, .calibrationComplete, .ping:
             break
         }
     }
@@ -252,53 +240,6 @@ final class PhoneCalibrationManager: ObservableObject {
         } else {
             backwardSamples = collected
         }
-    }
-
-    private func collectNegativeSamples() async {
-        var allSamples: [MotionSampleBatch] = []
-        var samplesPerPrompt = [String: Int]()
-
-        // Samla exakt 5 samples per typ, INGEN outlier-detektion
-        // (negativa samples SKA vara olika varandra)
-        for (promptIndex, prompt) in negativePrompts.enumerated() {
-            samplesPerPrompt[prompt] = 0
-
-            for sampleNum in 0..<Config.samplesPerNegativeType {
-                let totalCollected = allSamples.count
-                self.currentPrompt = "\(prompt)\n(\(sampleNum + 1)/\(Config.samplesPerNegativeType) av typ \(promptIndex + 1)/\(negativePrompts.count))"
-
-                phase = .collectingNegative(
-                    collected: totalCollected,
-                    target: Config.negativeSamplesTarget
-                )
-
-                // Försök tills vi får ett sample (max 5 försök)
-                var attempts = 0
-                while attempts < 5 {
-                    if let batch = await recordSingleSample(
-                        gestureType: .negative,
-                        index: totalCollected
-                    ) {
-                        allSamples.append(batch)
-                        samplesPerPrompt[prompt, default: 0] += 1
-                        break
-                    }
-                    attempts += 1
-                    print("[PhoneCalibrationManager] Negative sample failed, attempt \(attempts)/5")
-                }
-            }
-
-            print("[PhoneCalibrationManager] \(prompt): \(samplesPerPrompt[prompt] ?? 0) samples")
-        }
-
-        negativeSamples = allSamples
-
-        // Skriv ut statistik
-        print("[PhoneCalibrationManager] Negative samples per type:")
-        for prompt in negativePrompts {
-            print("  - \(prompt): \(samplesPerPrompt[prompt] ?? 0) samples")
-        }
-        print("[PhoneCalibrationManager] Negative: total \(negativeSamples.count) samples (no outlier detection)")
     }
 
     private func collectBatch(
@@ -380,7 +321,7 @@ final class PhoneCalibrationManager: ObservableObject {
     private func analyzeAndSave() async {
         phase = .analyzing
 
-        // Konvertera till templates
+        // Konvertera till templates (endast forward och backward)
         var templates: [GestureTemplate] = []
 
         templates.append(contentsOf: outlierDetector.toTemplates(
@@ -405,22 +346,10 @@ final class PhoneCalibrationManager: ObservableObject {
             label: .flickBackward
         ))
 
-        templates.append(contentsOf: outlierDetector.toTemplates(
-            OutlierDetector.AnalysisResult(
-                kept: negativeSamples,
-                removed: [],
-                averageDistances: [],
-                medianDistance: 0,
-                variance: 0
-            ),
-            label: .negative
-        ))
-
         // Spara till App Group (lokal backup)
         templateStore.save(templates)
 
         // Överför mallar till Watch via WCSession
-        // (App Group fungerar inte mellan iPhone och Watch - de är separata enheter)
         do {
             let data = try JSONEncoder().encode(templates)
             WCSession.default.transferUserInfo(["gestureTemplates": data])
@@ -438,7 +367,7 @@ final class PhoneCalibrationManager: ObservableObject {
             forwardRemoved: 0,
             backwardKept: backwardSamples.count,
             backwardRemoved: 0,
-            negativeKept: negativeSamples.count,
+            negativeKept: 0,
             negativeRemoved: 0
         )
 
@@ -453,12 +382,13 @@ final class PhoneCalibrationManager: ObservableObject {
         switch gestureType {
         case .flickForward:
             phase = .collectingForward(collected: collected, target: target)
-            progress = Double(collected) / Double(Config.maxSamplesPerType)
+            progress = Double(collected) / Double(Config.maxSamplesPerType * 2)
         case .flickBackward:
             phase = .collectingBackward(collected: collected, target: target)
-            progress = (Double(Config.maxSamplesPerType) + Double(collected)) / Double(Config.maxSamplesPerType * 2 + Config.negativeSamplesTarget)
+            progress = (Double(Config.maxSamplesPerType) + Double(collected)) / Double(Config.maxSamplesPerType * 2)
         case .negative:
-            phase = .collectingNegative(collected: collected, target: Config.negativeSamplesTarget)
+            // Negativa samples skippas i minimal kalibrering
+            break
         }
     }
 }
