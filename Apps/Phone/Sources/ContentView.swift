@@ -7,6 +7,16 @@ struct ContentView: View {
     @StateObject private var coordinator = BridgeCoordinator.shared
     @State private var showCalibration = false
 
+    // Kalibrering är valfri - användare kan välja att använda standardvärden
+    @AppStorage("useCalibration", store: UserDefaults(suiteName: "group.com.kristianniemi.FlickSlides"))
+    private var useCalibration = true
+
+    /// Kontrollerar om kalibrering har utförts (mallar finns)
+    private var hasCalibration: Bool {
+        let defaults = UserDefaults(suiteName: "group.com.kristianniemi.FlickSlides") ?? .standard
+        return defaults.data(forKey: "gestureTemplates") != nil
+    }
+
     var body: some View {
         NavigationStack {
             List {
@@ -130,8 +140,18 @@ struct ContentView: View {
                     .padding(.vertical)
                 }
 
-                // Kalibrering
-                Section("Gestkalibrering") {
+                // Kalibrering (valfritt)
+                Section {
+                    Toggle(isOn: $useCalibration) {
+                        VStack(alignment: .leading) {
+                            Text("Använd personliga gester")
+                            Text(hasCalibration ? "Kalibrering aktiv" : "Använder standardvärden")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .disabled(!hasCalibration)
+
                     Button {
                         showCalibration = true
                     } label: {
@@ -139,8 +159,8 @@ struct ContentView: View {
                             Image(systemName: "hand.wave.fill")
                                 .foregroundColor(.blue)
                             VStack(alignment: .leading) {
-                                Text("Kalibrera gester")
-                                Text("Anpassa gestdetektering")
+                                Text(hasCalibration ? "Kalibrera om" : "Kalibrera gester")
+                                Text("Valfritt – ~30 sek")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
@@ -150,6 +170,10 @@ struct ContentView: View {
                         }
                     }
                     .disabled(!watchSession.isWatchReachable)
+                } header: {
+                    Text("Finjustering")
+                } footer: {
+                    Text("Gester fungerar direkt utan kalibrering. Kalibrera endast om du har problem.")
                 }
 
                 // Kommandologg
