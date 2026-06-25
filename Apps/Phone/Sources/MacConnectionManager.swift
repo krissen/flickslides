@@ -140,7 +140,7 @@ final class MacConnectionManager: NSObject, ObservableObject {
 
             if case .failure = result {
                 await MainActor.run {
-                    self.pendingExecutedHandlers.removeValue(forKey: command)
+                    _ = self.pendingExecutedHandlers.removeValue(forKey: command)
                 }
             }
         }
