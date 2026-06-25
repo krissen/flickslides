@@ -4,7 +4,9 @@ import WatchConnectivity
 
 struct ContentView: View {
     @StateObject private var presentationManager = PresentationManager.shared
+    @ObservedObject private var calibrationCoordinator = WatchCalibrationCoordinator.shared
     @State private var showCalibration = false
+    @State private var navigateToCalibration = false
 
     var body: some View {
         NavigationStack {
@@ -33,6 +35,20 @@ struct ContentView: View {
                     .accessibilityLabel("Inställningar")
                     .accessibilityHint("Öppna kalibrering och inställningar")
                 }
+            }
+            .navigationDestination(isPresented: $navigateToCalibration) {
+                WatchCalibrationView()
+            }
+            .alert("Kalibrering", isPresented: $calibrationCoordinator.showCalibrationRequest) {
+                Button("Starta") {
+                    calibrationCoordinator.acceptCalibrationRequest()
+                    navigateToCalibration = true
+                }
+                Button("Avbryt", role: .cancel) {
+                    calibrationCoordinator.declineCalibrationRequest()
+                }
+            } message: {
+                Text("iPhone vill starta gestkalibrering. Vill du fortsätta?")
             }
         }
     }

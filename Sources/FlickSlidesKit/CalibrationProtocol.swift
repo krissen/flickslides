@@ -7,6 +7,9 @@ public enum CalibrationMessage: Codable, Sendable {
 
     // MARK: - Phone → Watch
 
+    /// Begär att Watch ska starta kalibrering (visar dialog på Watch).
+    case calibrationRequested
+
     /// Starta inspelning av en gest.
     case startRecording(gestureType: GestureLabel, sampleIndex: Int)
 
@@ -23,6 +26,12 @@ public enum CalibrationMessage: Codable, Sendable {
     case ping
 
     // MARK: - Watch → Phone
+
+    /// Användaren accepterade kalibreringsbegäran på Watch.
+    case calibrationAccepted
+
+    /// Användaren avvisade kalibreringsbegäran på Watch.
+    case calibrationDeclined
 
     /// Watch är redo att spela in.
     case recordingStarted
@@ -59,11 +68,14 @@ extension CalibrationMessage {
     }
 
     private enum MessageType: String, Codable {
+        case calibrationRequested
         case startRecording
         case stopRecording
         case calibrationAborted
         case calibrationComplete
         case ping
+        case calibrationAccepted
+        case calibrationDeclined
         case recordingStarted
         case sampleRecorded
         case recordingFailed
@@ -78,6 +90,8 @@ extension CalibrationMessage {
         let type = try container.decode(MessageType.self, forKey: .type)
 
         switch type {
+        case .calibrationRequested:
+            self = .calibrationRequested
         case .startRecording:
             let gestureType = try container.decode(GestureLabel.self, forKey: .gestureType)
             let sampleIndex = try container.decode(Int.self, forKey: .sampleIndex)
@@ -90,6 +104,10 @@ extension CalibrationMessage {
             self = .calibrationComplete
         case .ping:
             self = .ping
+        case .calibrationAccepted:
+            self = .calibrationAccepted
+        case .calibrationDeclined:
+            self = .calibrationDeclined
         case .recordingStarted:
             self = .recordingStarted
         case .sampleRecorded:
@@ -113,6 +131,8 @@ extension CalibrationMessage {
         var container = encoder.container(keyedBy: CodingKeys.self)
 
         switch self {
+        case .calibrationRequested:
+            try container.encode(MessageType.calibrationRequested, forKey: .type)
         case .startRecording(let gestureType, let sampleIndex):
             try container.encode(MessageType.startRecording, forKey: .type)
             try container.encode(gestureType, forKey: .gestureType)
@@ -125,6 +145,10 @@ extension CalibrationMessage {
             try container.encode(MessageType.calibrationComplete, forKey: .type)
         case .ping:
             try container.encode(MessageType.ping, forKey: .type)
+        case .calibrationAccepted:
+            try container.encode(MessageType.calibrationAccepted, forKey: .type)
+        case .calibrationDeclined:
+            try container.encode(MessageType.calibrationDeclined, forKey: .type)
         case .recordingStarted:
             try container.encode(MessageType.recordingStarted, forKey: .type)
         case .sampleRecorded(let batch):

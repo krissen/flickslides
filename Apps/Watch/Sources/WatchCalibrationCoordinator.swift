@@ -25,6 +25,9 @@ final class WatchCalibrationCoordinator: NSObject, ObservableObject {
     @Published private(set) var isReadyForGesture = false
     @Published private(set) var lastError: String?
 
+    /// Visar dialog för att acceptera/avvisa kalibreringsbegäran från Phone.
+    @Published var showCalibrationRequest = false
+
     // MARK: - Dependencies
 
     private let recorder = CalibrationRecorder()
@@ -83,6 +86,9 @@ final class WatchCalibrationCoordinator: NSObject, ObservableObject {
         log("Received: \(message)")
 
         switch message {
+        case .calibrationRequested:
+            handleCalibrationRequested()
+
         case .startRecording(let gestureType, let sampleIndex):
             handleStartRecording(gestureType: gestureType, sampleIndex: sampleIndex)
 
@@ -99,12 +105,35 @@ final class WatchCalibrationCoordinator: NSObject, ObservableObject {
             handlePing()
 
         // Meddelanden som Watch skickar, inte tar emot
-        case .recordingStarted, .sampleRecorded, .recordingFailed, .pong, .watchReady, .watchDismissed, .readyForGesture:
+        case .calibrationAccepted, .calibrationDeclined,
+             .recordingStarted, .sampleRecorded, .recordingFailed,
+             .pong, .watchReady, .watchDismissed, .readyForGesture:
             log("Unexpected message type received: \(message)")
         }
     }
 
     // MARK: - Command Handlers
+
+    private func handleCalibrationRequested() {
+        // Visa dialog på Watch
+        showCalibrationRequest = true
+        WKInterfaceDevice.current().play(.notification)
+        log("Calibration requested by Phone - showing dialog")
+    }
+
+    /// Användaren accepterade kalibreringsbegäran.
+    func acceptCalibrationRequest() {
+        showCalibrationRequest = false
+        sendMessage(.calibrationAccepted)
+        log("Calibration accepted by user")
+    }
+
+    /// Användaren avvisade kalibreringsbegäran.
+    func declineCalibrationRequest() {
+        showCalibrationRequest = false
+        sendMessage(.calibrationDeclined)
+        log("Calibration declined by user")
+    }
 
     private func handleStartRecording(gestureType: GestureLabel, sampleIndex: Int) {
         isCalibrationActive = true
